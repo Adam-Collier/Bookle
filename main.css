@@ -1,0 +1,99 @@
+@font-face{
+    font-family: Lora;
+    src: url(./fonts/Lora-Regular.ttf);
+}
+@font-face{
+    font-family: Lato;
+    src: url(./fonts/Lato-Regular.ttf);
+}
+body{
+    margin: 0px;
+}
+body:after{
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 40px;
+    -webkit-app-region: drag;
+    z-index: 1;
+}
+.menu{
+    width: 100%;
+    height: 90px;
+    box-shadow: 0 0 8px rgba(0,0,0,0.15);
+    background: #FFF;
+    position: fixed;
+    z-index: 1;
+}
+svg{
+    position: absolute;
+}
+.device{
+    width: 35px;
+    left: 8%;
+}
+.read{
+    width: 80px;
+    left: 15%;
+}
+.add{
+    width: 25px;
+    left: calc(50% - 12.5px);
+}
+.list{
+    width: 20px;
+    right: 5%;
+}
+.holder{
+    height: auto;
+    width: 100vw;
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    padding: 140px 0px 0px 4vw;
+}
+.books{
+    flex: 0 0 20vw;
+    margin: 0 4vw 50px 0;
+    overflow: hidden;
+    white-space: nowrap;
+}
+.books div:before{
+    content: '';
+    padding-top: 149.89%;
+    display: block;
+}
+.books div{
+    position: relative;
+    overflow: hidden;
+    border-radius: 2px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+
+}
+.books img{
+    width: 100%;
+    position: absolute;
+    top: 0;
+}
+.books h2{
+    width: 99%;
+    font-family: Lora;
+    font-size: 16px;
+    margin-bottom: 6px;
+    letter-spacing: 0.5px;
+    overflow: hidden;
+    text-overflow: ellipsis; 
+}
+.books h3{
+    font-family: Lato;
+    font-size: 14px;
+    font-weight: 300;
+    margin: 0px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: #CBCBCB;
+}

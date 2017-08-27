@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1">
+<head>
+<meta name="dtb:uid" content="urn:isbn:9780141970257"></meta>
+</head>
+<docTitle><text>Blue Monday</text></docTitle>
+<docAuthor><text>Nicci French</text></docAuthor>
+<navMap>
+<navPoint id="cover" playOrder="1"><navLabel><text>Cover</text></navLabel><content src="xhtml/cover.html"/></navPoint>
+<navPoint id="abouttheauthor" playOrder="2"><navLabel><text>About the Author</text></navLabel><content src="xhtml/abouttheauthor.html"/></navPoint>
+<navPoint id="title" playOrder="3"><navLabel><text>Title Page</text></navLabel><content src="xhtml/title.html"/></navPoint>
+<navPoint id="copyright" playOrder="4"><navLabel><text>Copyright Page</text></navLabel><content src="xhtml/copyright.html"/></navPoint>
+<navPoint id="toc" playOrder="5"><navLabel><text>Contents</text></navLabel><content src="xhtml/toc.html"/></navPoint>
+<navPoint playOrder="6" id="dedication"><navLabel><text>Dedication</text></navLabel><content src="xhtml/dedication.html"/></navPoint>
+<navPoint playOrder="7" id="preface"><navLabel><text>1987</text></navLabel><content src="xhtml/preface.html"/></navPoint>
+<navPoint id="part001" playOrder="8"><navLabel><text>Blue Monday</text></navLabel><content src="xhtml/chapter001.html"/>
+<navPoint playOrder="8" id="chapter001"><navLabel><text>Chapter One</text></navLabel><content src="xhtml/chapter001.html"/></navPoint>
+<navPoint playOrder="9" id="chapter002"><navLabel><text>Chapter Two</text></navLabel><content src="xhtml/chapter002.html"/></navPoint>
+<navPoint playOrder="10" id="chapter003"><navLabel><text>Chapter Three</text></navLabel><content src="xhtml/chapter003.html"/></navPoint>
+<navPoint playOrder="11" id="chapter004"><navLabel><text>Chapter Four</text></navLabel><content src="xhtml/chapter004.html"/></navPoint>
+<navPoint playOrder="12" id="chapter005"><navLabel><text>Chapter Five</text></navLabel><content src="xhtml/chapter005.html"/></navPoint>
+<navPoint playOrder="13" id="chapter006"><navLabel><text>Chapter Six</text></navLabel><content src="xhtml/chapter006.html"/></navPoint>
+<navPoint playOrder="14" id="chapter007"><navLabel><text>Chapter Seven</text></navLabel><content src="xhtml/chapter007.html"/></navPoint>
+<navPoint playOrder="15" id="chapter008"><navLabel><text>Chapter Eight</text></navLabel><content src="xhtml/chapter008.html"/></navPoint>
+<navPoint playOrder="16" id="chapter009"><navLabel><text>Chapter Nine</text></navLabel><content src="xhtml/chapter009.html"/></navPoint>
+<navPoint playOrder="17" id="chapter010"><navLabel><text>Chapter Ten</text></navLabel><content src="xhtml/chapter010.html"/></navPoint>
+<navPoint playOrder="18" id="chapter011"><navLabel><text>Chapter Eleven</text></navLabel><content src="xhtml/chapter011.html"/></navPoint>
+<navPoint playOrder="19" id="chapter012"><navLabel><text>Chapter Twelve</text></navLabel><content src="xhtml/chapter012.html"/></navPoint>
+<navPoint playOrder="20" id="chapter013"><navLabel><text>Chapter Thirteen</text></navLabel><content src="xhtml/chapter013.html"/></navPoint>
+<navPoint playOrder="21" id="chapter014"><navLabel><text>Chapter Fourteen</text></navLabel><content src="xhtml/chapter014.html"/></navPoint>
+<navPoint playOrder="22" id="chapter015"><navLabel><text>Chapter Fifteen</text></navLabel><content src="xhtml/chapter015.html"/></navPoint>
+<navPoint playOrder="23" id="chapter016"><navLabel><text>Chapter Sixteen</text></navLabel><content src="xhtml/chapter016.html"/></navPoint>
+<navPoint playOrder="24" id="chapter017"><navLabel><text>Chapter Seventeen</text></navLabel><content src="xhtml/chapter017.html"/></navPoint>
+<navPoint playOrder="25" id="chapter018"><navLabel><text>Chapter Eighteen</text></navLabel><content src="xhtml/chapter018.html"/></navPoint>
+<navPoint playOrder="26" id="chapter019"><navLabel><text>Chapter Nineteen</text></navLabel><content src="xhtml/chapter019.html"/></navPoint>
+<navPoint playOrder="27" id="chapter020"><navLabel><text>Chapter Twenty</text></navLabel><content src="xhtml/chapter020.html"/></navPoint>
+<navPoint playOrder="28" id="chapter021"><navLabel><text>Chapter Twenty-one</text></navLabel><content src="xhtml/chapter021.html"/></navPoint>
+<navPoint playOrder="29" id="chapter022"><navLabel><text>Chapter Twenty-two</text></navLabel><content src="xhtml/chapter022.html"/></navPoint>
+<navPoint playOrder="30" id="chapter023"><navLabel><text>Chapter Twenty-three</text></navLabel><content src="xhtml/chapter023.html"/></navPoint>
+<navPoint playOrder="31" id="chapter024"><navLabel><text>Chapter Twenty-four</text></navLabel><content src="xhtml/chapter024.html"/></navPoint>
+<navPoint playOrder="32" id="chapter025"><navLabel><text>Chapter Twenty-five</text></navLabel><content src="xhtml/chapter025.html"/></navPoint>
+<navPoint playOrder="33" id="chapter026"><navLabel><text>Chapter Twenty-six</text></navLabel><content src="xhtml/chapter026.html"/></navPoint>
+<navPoint playOrder="34" id="chapter027"><navLabel><text>Chapter Twenty-seven</text></navLabel><content src="xhtml/chapter027.html"/></navPoint>
+<navPoint playOrder="35" id="chapter028"><navLabel><text>Chapter Twenty-eight</text></navLabel><content src="xhtml/chapter028.html"/></navPoint>
+<navPoint playOrder="36" id="chapter029"><navLabel><text>Chapter Twenty-nine</text></navLabel><content src="xhtml/chapter029.html"/></navPoint>
+<navPoint playOrder="37" id="chapter030"><navLabel><text>Chapter Thirty</text></navLabel><content src="xhtml/chapter030.html"/></navPoint>
+<navPoint playOrder="38" id="chapter031"><navLabel><text>Chapter Thirty-one</text></navLabel><content src="xhtml/chapter031.html"/></navPoint>
+<navPoint playOrder="39" id="chapter032"><navLabel><text>Chapter Thirty-two</text></navLabel><content src="xhtml/chapter032.html"/></navPoint>
+<navPoint playOrder="40" id="chapter033"><navLabel><text>Chapter Thirty-three</text></navLabel><content src="xhtml/chapter033.html"/></navPoint>
+<navPoint playOrder="41" id="chapter034"><navLabel><text>Chapter Thirty-four</text></navLabel><content src="xhtml/chapter034.html"/></navPoint>
+<navPoint playOrder="42" id="chapter035"><navLabel><text>Chapter Thirty-five</text></navLabel><content src="xhtml/chapter035.html"/></navPoint>
+<navPoint playOrder="43" id="chapter036"><navLabel><text>Chapter Thirty-six</text></navLabel><content src="xhtml/chapter036.html"/></navPoint>
+<navPoint playOrder="44" id="chapter037"><navLabel><text>Chapter Thirty-seven</text></navLabel><content src="xhtml/chapter037.html"/></navPoint>
+<navPoint playOrder="45" id="chapter038"><navLabel><text>Chapter Thirty-eight</text></navLabel><content src="xhtml/chapter038.html"/></navPoint>
+<navPoint playOrder="46" id="chapter039"><navLabel><text>Chapter Thirty-nine</text></navLabel><content src="xhtml/chapter039.html"/></navPoint>
+<navPoint playOrder="47" id="chapter040"><navLabel><text>Chapter Forty</text></navLabel><content src="xhtml/chapter040.html"/></navPoint>
+<navPoint playOrder="48" id="chapter041"><navLabel><text>Chapter Forty-one</text></navLabel><content src="xhtml/chapter041.html"/></navPoint>
+<navPoint playOrder="49" id="chapter042"><navLabel><text>Chapter Forty-two</text></navLabel><content src="xhtml/chapter042.html"/></navPoint>
+<navPoint playOrder="50" id="chapter043"><navLabel><text>Chapter Forty-three</text></navLabel><content src="xhtml/chapter043.html"/></navPoint>
+<navPoint playOrder="51" id="chapter044"><navLabel><text>Chapter Forty-four</text></navLabel><content src="xhtml/chapter044.html"/></navPoint>
+<navPoint playOrder="52" id="chapter045"><navLabel><text>Chapter Forty-five</text></navLabel><content src="xhtml/chapter045.html"/></navPoint>
+<navPoint playOrder="53" id="chapter046"><navLabel><text>Chapter Forty-six</text></navLabel><content src="xhtml/chapter046.html"/></navPoint>
+<navPoint playOrder="54" id="chapter047"><navLabel><text>Chapter Forty-seven</text></navLabel><content src="xhtml/chapter047.html"/></navPoint>
+<navPoint playOrder="55" id="chapter048"><navLabel><text>Chapter Forty-eight</text></navLabel><content src="xhtml/chapter048.html"/></navPoint></navPoint>
+<navPoint playOrder="56" id="acknowledgements"><navLabel><text>Acknowledgements</text></navLabel><content src="xhtml/acknowledgements.html"/></navPoint>
+<navPoint playOrder="57" id="map"><navLabel><text>Map</text></navLabel><content src="xhtml/map.html"/></navPoint>
+</navMap>
+</ncx>

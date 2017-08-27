@@ -1,0 +1,153 @@
+<?xml version='1.0' encoding='utf-8'?>
+<ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1" xml:lang="eng">
+  <head>
+    <meta content="64804df7-3364-46a0-8fcf-e6a192806208" name="dtb:uid"/>
+    <meta content="2" name="dtb:depth"/>
+    <meta content="calibre (2.83.0)" name="dtb:generator"/>
+    <meta content="0" name="dtb:totalPageCount"/>
+    <meta content="0" name="dtb:maxPageNumber"/>
+  </head>
+  <docTitle>
+    <text>Move Fast and Break Things: How Facebook, Google, and Amazon Cornered Culture and Undermined Democracy</text>
+  </docTitle>
+  <navMap>
+    <navPoint class="chapter" id="num_1" playOrder="0">
+      <navLabel>
+        <text>Title Page</text>
+      </navLabel>
+      <content src="text/part0000.html#0-f8b6e77826444e0186a747ccc97eb697"/>
+    </navPoint>
+    <navPoint class="chapter" id="num_2" playOrder="1">
+      <navLabel>
+        <text>Copyright</text>
+      </navLabel>
+      <content src="text/part0001.html#UGI0-f8b6e77826444e0186a747ccc97eb697"/>
+    </navPoint>
+    <navPoint class="chapter" id="num_3" playOrder="2">
+      <navLabel>
+        <text>Dedication</text>
+      </navLabel>
+      <content src="text/part0003.html#2RHM0-f8b6e77826444e0186a747ccc97eb697"/>
+    </navPoint>
+    <navPoint class="chapter" id="num_4" playOrder="3">
+      <navLabel>
+        <text>Epigraph</text>
+      </navLabel>
+      <content src="text/part0004.html#3Q280-f8b6e77826444e0186a747ccc97eb697"/>
+    </navPoint>
+    <navPoint class="chapter" id="num_5" playOrder="4">
+      <navLabel>
+        <text>Introduction</text>
+      </navLabel>
+      <content src="text/part0005.html#4OIQ0-f8b6e77826444e0186a747ccc97eb697"/>
+    </navPoint>
+    <navPoint class="chapter" id="num_6" playOrder="5">
+      <navLabel>
+        <text>Chapter One: The Great Disruption</text>
+      </navLabel>
+      <content src="text/part0006_split_000.html#5N3C0-f8b6e77826444e0186a747ccc97eb697"/>
+    </navPoint>
+    <navPoint class="chapter" id="num_7" playOrder="6">
+      <navLabel>
+        <text>Chapter Two: Levon’s Story</text>
+      </navLabel>
+      <content src="text/part0007_split_000.html#6LJU0-f8b6e77826444e0186a747ccc97eb697"/>
+    </navPoint>
+    <navPoint class="chapter" id="num_8" playOrder="7">
+      <navLabel>
+        <text>Chapter Three: Tech’s Counterculture Roots</text>
+      </navLabel>
+      <content src="text/part0008_split_000.html#7K4G0-f8b6e77826444e0186a747ccc97eb697"/>
+    </navPoint>
+    <navPoint class="chapter" id="num_9" playOrder="8">
+      <navLabel>
+        <text>Chapter Four: The Libertarian Counterinsurgency</text>
+      </navLabel>
+      <content src="text/part0009_split_000.html#8IL20-f8b6e77826444e0186a747ccc97eb697"/>
+    </navPoint>
+    <navPoint class="chapter" id="num_10" playOrder="9">
+      <navLabel>
+        <text>Chapter Five: Digital Destruction</text>
+      </navLabel>
+      <content src="text/part0010_split_000.html#9H5K0-f8b6e77826444e0186a747ccc97eb697"/>
+    </navPoint>
+    <navPoint class="chapter" id="num_11" playOrder="10">
+      <navLabel>
+        <text>Chapter Six: Monopoly in the Digital Age</text>
+      </navLabel>
+      <content src="text/part0011_split_000.html#AFM60-f8b6e77826444e0186a747ccc97eb697"/>
+    </navPoint>
+    <navPoint class="chapter" id="num_12" playOrder="11">
+      <navLabel>
+        <text>Chapter Seven: Google’s Regulatory Capture</text>
+      </navLabel>
+      <content src="text/part0012_split_000.html#BE6O0-f8b6e77826444e0186a747ccc97eb697"/>
+    </navPoint>
+    <navPoint class="chapter" id="num_13" playOrder="12">
+      <navLabel>
+        <text>Chapter Eight: The Social Media Revolution</text>
+      </navLabel>
+      <content src="text/part0013_split_000.html#CCNA0-f8b6e77826444e0186a747ccc97eb697"/>
+    </navPoint>
+    <navPoint class="chapter" id="num_14" playOrder="13">
+      <navLabel>
+        <text>Chapter Nine: Pirates of the Internet</text>
+      </navLabel>
+      <content src="text/part0014_split_000.html#DB7S0-f8b6e77826444e0186a747ccc97eb697"/>
+    </navPoint>
+    <navPoint class="chapter" id="num_15" playOrder="14">
+      <navLabel>
+        <text>Chapter Ten: Libertarians and the 1 Percent</text>
+      </navLabel>
+      <content src="text/part0015_split_000.html#E9OE0-f8b6e77826444e0186a747ccc97eb697"/>
+    </navPoint>
+    <navPoint class="chapter" id="num_16" playOrder="15">
+      <navLabel>
+        <text>Chapter Eleven: What It Means to Be Human</text>
+      </navLabel>
+      <content src="text/part0016_split_000.html#F8900-f8b6e77826444e0186a747ccc97eb697"/>
+    </navPoint>
+    <navPoint class="chapter" id="num_17" playOrder="16">
+      <navLabel>
+        <text>Chapter Twelve: The Digital Renaissance</text>
+      </navLabel>
+      <content src="text/part0017_split_000.html#G6PI0-f8b6e77826444e0186a747ccc97eb697"/>
+    </navPoint>
+    <navPoint class="chapter" id="num_18" playOrder="17">
+      <navLabel>
+        <text>Afterword</text>
+      </navLabel>
+      <content src="text/part0018.html#H5A40-f8b6e77826444e0186a747ccc97eb697"/>
+    </navPoint>
+    <navPoint class="chapter" id="num_19" playOrder="18">
+      <navLabel>
+        <text>Acknowledgments</text>
+      </navLabel>
+      <content src="text/part0019.html#I3QM0-f8b6e77826444e0186a747ccc97eb697"/>
+    </navPoint>
+    <navPoint class="chapter" id="num_20" playOrder="19">
+      <navLabel>
+        <text>About the Author</text>
+      </navLabel>
+      <content src="text/part0020.html#J2B80-f8b6e77826444e0186a747ccc97eb697"/>
+    </navPoint>
+    <navPoint class="chapter" id="num_21" playOrder="20">
+      <navLabel>
+        <text>Also by Jonathan Taplin</text>
+      </navLabel>
+      <content src="text/part0021.html#K0RQ0-f8b6e77826444e0186a747ccc97eb697"/>
+    </navPoint>
+    <navPoint class="chapter" id="num_22" playOrder="21">
+      <navLabel>
+        <text>Notes</text>
+      </navLabel>
+      <content src="text/part0022_split_000.html#KVCC0-f8b6e77826444e0186a747ccc97eb697"/>
+    </navPoint>
+    <navPoint class="chapter" id="num_23" playOrder="22">
+      <navLabel>
+        <text>Newsletters</text>
+      </navLabel>
+      <content src="text/part0023.html#LTSU0-f8b6e77826444e0186a747ccc97eb697"/>
+    </navPoint>
+  </navMap>
+</ncx>

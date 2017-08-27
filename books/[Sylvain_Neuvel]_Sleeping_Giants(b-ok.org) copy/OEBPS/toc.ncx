@@ -1,0 +1,357 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ncx version="2005-1" xml:lang="eng" xmlns="http://www.daisy.org/z3986/2005/ncx/">
+  <head>
+    <meta content="286f812e-7614-4d87-88c3-31a93ae56195" name="dtb:uid"/>
+    <meta content="3" name="dtb:depth"/>
+    <meta content="calibre (2.55.0)" name="dtb:generator"/>
+    <meta content="0" name="dtb:totalPageCount"/>
+    <meta content="0" name="dtb:maxPageNumber"/>
+  </head>
+  <docTitle>
+    <text>Sleeping Giants</text>
+  </docTitle>
+  <navMap>
+    <navPoint class="chapter" id="num_1" playOrder="1">
+      <navLabel>
+        <text>Title Page</text>
+      </navLabel>
+      <content src="Text/part0000.html"/>
+    </navPoint>
+    <navPoint class="chapter" id="num_2" playOrder="2">
+      <navLabel>
+        <text>Copyright</text>
+      </navLabel>
+      <content src="Text/part0001.html"/>
+    </navPoint>
+    <navPoint class="chapter" id="num_3" playOrder="3">
+      <navLabel>
+        <text>Contents</text>
+      </navLabel>
+      <content src="Text/part0002.html"/>
+    </navPoint>
+    <navPoint class="chapter" id="num_4" playOrder="4">
+      <navLabel>
+        <text>Prologue</text>
+      </navLabel>
+      <content src="Text/part0003.html"/>
+    </navPoint>
+    <navPoint class="chapter" id="num_5" playOrder="5">
+      <navLabel>
+        <text>Part One: Body Parts</text>
+      </navLabel>
+      <content src="Text/part0004.html"/>
+      <navPoint class="chapter" id="num_6" playOrder="6">
+        <navLabel>
+          <text>File No. 003</text>
+        </navLabel>
+        <content src="Text/part0005.html"/>
+      </navPoint>
+      <navPoint class="chapter" id="num_7" playOrder="7">
+        <navLabel>
+          <text>File No. 004</text>
+        </navLabel>
+        <content src="Text/part0006.html"/>
+      </navPoint>
+      <navPoint class="chapter" id="num_8" playOrder="8">
+        <navLabel>
+          <text>File No. 007</text>
+        </navLabel>
+        <content src="Text/part0007.html"/>
+      </navPoint>
+      <navPoint class="chapter" id="num_9" playOrder="9">
+        <navLabel>
+          <text>File No. 009</text>
+        </navLabel>
+        <content src="Text/part0008.html"/>
+      </navPoint>
+      <navPoint class="chapter" id="num_10" playOrder="10">
+        <navLabel>
+          <text>File No. 017</text>
+        </navLabel>
+        <content src="Text/part0009.html"/>
+      </navPoint>
+      <navPoint class="chapter" id="num_11" playOrder="11">
+        <navLabel>
+          <text>File No. 031</text>
+        </navLabel>
+        <content src="Text/part0010.html"/>
+      </navPoint>
+      <navPoint class="chapter" id="num_12" playOrder="12">
+        <navLabel>
+          <text>File No. 033</text>
+        </navLabel>
+        <content src="Text/part0011.html"/>
+      </navPoint>
+      <navPoint class="chapter" id="num_13" playOrder="13">
+        <navLabel>
+          <text>File No. 034</text>
+        </navLabel>
+        <content src="Text/part0012.html"/>
+      </navPoint>
+    </navPoint>
+    <navPoint class="chapter" id="num_14" playOrder="14">
+      <navLabel>
+        <text>Part Two: Break a Leg</text>
+      </navLabel>
+      <content src="Text/part0013.html"/>
+      <navPoint class="chapter" id="num_15" playOrder="15">
+        <navLabel>
+          <text>File No. 037</text>
+        </navLabel>
+        <content src="Text/part0014.html"/>
+      </navPoint>
+      <navPoint class="chapter" id="num_16" playOrder="16">
+        <navLabel>
+          <text>File No. 039</text>
+        </navLabel>
+        <content src="Text/part0015.html"/>
+      </navPoint>
+      <navPoint class="chapter" id="num_17" playOrder="17">
+        <navLabel>
+          <text>File No. 041</text>
+        </navLabel>
+        <content src="Text/part0016.html"/>
+      </navPoint>
+      <navPoint class="chapter" id="num_18" playOrder="18">
+        <navLabel>
+          <text>File No. 042</text>
+        </navLabel>
+        <content src="Text/part0017.html"/>
+      </navPoint>
+      <navPoint class="chapter" id="num_19" playOrder="19">
+        <navLabel>
+          <text>File No. 047</text>
+        </navLabel>
+        <content src="Text/part0018.html"/>
+      </navPoint>
+      <navPoint class="chapter" id="num_20" playOrder="20">
+        <navLabel>
+          <text>File No. 092</text>
+        </navLabel>
+        <content src="Text/part0019.html"/>
+      </navPoint>
+      <navPoint class="chapter" id="num_21" playOrder="21">
+        <navLabel>
+          <text>File No. 093</text>
+        </navLabel>
+        <content src="Text/part0020.html"/>
+      </navPoint>
+      <navPoint class="chapter" id="num_22" playOrder="22">
+        <navLabel>
+          <text>File No. 094</text>
+        </navLabel>
+        <content src="Text/part0021.html"/>
+      </navPoint>
+      <navPoint class="chapter" id="num_23" playOrder="23">
+        <navLabel>
+          <text>File No. 118</text>
+        </navLabel>
+        <content src="Text/part0022.html"/>
+      </navPoint>
+    </navPoint>
+    <navPoint class="chapter" id="num_24" playOrder="24">
+      <navLabel>
+        <text>Part Three: Headhunting</text>
+      </navLabel>
+      <content src="Text/part0023.html"/>
+      <navPoint class="chapter" id="num_25" playOrder="25">
+        <navLabel>
+          <text>File No. 120</text>
+        </navLabel>
+        <content src="Text/part0024.html"/>
+      </navPoint>
+      <navPoint class="chapter" id="num_26" playOrder="26">
+        <navLabel>
+          <text>File No. 121</text>
+        </navLabel>
+        <content src="Text/part0025.html"/>
+      </navPoint>
+      <navPoint class="chapter" id="num_27" playOrder="27">
+        <navLabel>
+          <text>File No. 126</text>
+        </navLabel>
+        <content src="Text/part0026.html"/>
+      </navPoint>
+      <navPoint class="chapter" id="num_28" playOrder="28">
+        <navLabel>
+          <text>File No. 129</text>
+        </navLabel>
+        <content src="Text/part0027.html"/>
+      </navPoint>
+      <navPoint class="chapter" id="num_29" playOrder="29">
+        <navLabel>
+          <text>File No. 141</text>
+        </navLabel>
+        <content src="Text/part0028.html"/>
+      </navPoint>
+      <navPoint class="chapter" id="num_30" playOrder="30">
+        <navLabel>
+          <text>File No. 143</text>
+        </navLabel>
+        <content src="Text/part0029.html"/>
+      </navPoint>
+      <navPoint class="chapter" id="num_31" playOrder="31">
+        <navLabel>
+          <text>File No. 161</text>
+        </navLabel>
+        <content src="Text/part0030.html"/>
+      </navPoint>
+      <navPoint class="chapter" id="num_32" playOrder="32">
+        <navLabel>
+          <text>File No. 182</text>
+        </navLabel>
+        <content src="Text/part0031.html"/>
+      </navPoint>
+      <navPoint class="chapter" id="num_33" playOrder="33">
+        <navLabel>
+          <text>File No. 188</text>
+        </navLabel>
+        <content src="Text/part0032.html"/>
+      </navPoint>
+      <navPoint class="chapter" id="num_34" playOrder="34">
+        <navLabel>
+          <text>File No. 189</text>
+        </navLabel>
+        <content src="Text/part0033.html"/>
+      </navPoint>
+    </navPoint>
+    <navPoint class="chapter" id="num_35" playOrder="35">
+      <navLabel>
+        <text>Part Four: Body Blow</text>
+      </navLabel>
+      <content src="Text/part0034.html"/>
+      <navPoint class="chapter" id="num_36" playOrder="36">
+        <navLabel>
+          <text>File No. 211</text>
+        </navLabel>
+        <content src="Text/part0035.html"/>
+      </navPoint>
+      <navPoint class="chapter" id="num_37" playOrder="37">
+        <navLabel>
+          <text>File No. 229</text>
+        </navLabel>
+        <content src="Text/part0036.html"/>
+      </navPoint>
+      <navPoint class="chapter" id="num_38" playOrder="38">
+        <navLabel>
+          <text>File No. 230</text>
+        </navLabel>
+        <content src="Text/part0037.html"/>
+      </navPoint>
+      <navPoint class="chapter" id="num_39" playOrder="39">
+        <navLabel>
+          <text>File No. 233</text>
+        </navLabel>
+        <content src="Text/part0038.html"/>
+      </navPoint>
+      <navPoint class="chapter" id="num_40" playOrder="40">
+        <navLabel>
+          <text>File No. 237</text>
+        </navLabel>
+        <content src="Text/part0039.html"/>
+      </navPoint>
+      <navPoint class="chapter" id="num_41" playOrder="41">
+        <navLabel>
+          <text>File No. 239</text>
+        </navLabel>
+        <content src="Text/part0040.html"/>
+      </navPoint>
+      <navPoint class="chapter" id="num_42" playOrder="42">
+        <navLabel>
+          <text>File No. 249</text>
+        </navLabel>
+        <content src="Text/part0041.html"/>
+      </navPoint>
+      <navPoint class="chapter" id="num_43" playOrder="43">
+        <navLabel>
+          <text>File No. 250</text>
+        </navLabel>
+        <content src="Text/part0042.html"/>
+      </navPoint>
+    </navPoint>
+    <navPoint class="chapter" id="num_44" playOrder="44">
+      <navLabel>
+        <text>Part Five: Up in Arms</text>
+      </navLabel>
+      <content src="Text/part0043.html"/>
+      <navPoint class="chapter" id="num_45" playOrder="45">
+        <navLabel>
+          <text>File No. 251</text>
+        </navLabel>
+        <content src="Text/part0044.html"/>
+      </navPoint>
+      <navPoint class="chapter" id="num_46" playOrder="46">
+        <navLabel>
+          <text>File No. 252</text>
+        </navLabel>
+        <content src="Text/part0045.html"/>
+      </navPoint>
+      <navPoint class="chapter" id="num_47" playOrder="47">
+        <navLabel>
+          <text>File No. 253</text>
+        </navLabel>
+        <content src="Text/part0046.html"/>
+      </navPoint>
+      <navPoint class="chapter" id="num_48" playOrder="48">
+        <navLabel>
+          <text>File No. 254</text>
+        </navLabel>
+        <content src="Text/part0047.html"/>
+      </navPoint>
+      <navPoint class="chapter" id="num_49" playOrder="49">
+        <navLabel>
+          <text>File No. 255</text>
+        </navLabel>
+        <content src="Text/part0048.html"/>
+      </navPoint>
+      <navPoint class="chapter" id="num_50" playOrder="50">
+        <navLabel>
+          <text>File No. 256</text>
+        </navLabel>
+        <content src="Text/part0049.html"/>
+      </navPoint>
+      <navPoint class="chapter" id="num_51" playOrder="51">
+        <navLabel>
+          <text>File No. 257</text>
+        </navLabel>
+        <content src="Text/part0050.html"/>
+      </navPoint>
+      <navPoint class="chapter" id="num_52" playOrder="52">
+        <navLabel>
+          <text>File No. 263</text>
+        </navLabel>
+        <content src="Text/part0051.html"/>
+      </navPoint>
+    </navPoint>
+    <navPoint class="chapter" id="num_53" playOrder="53">
+      <navLabel>
+        <text>Epilogue</text>
+      </navLabel>
+      <content src="Text/part0052.html"/>
+      <navPoint class="chapter" id="num_54" playOrder="54">
+        <navLabel>
+          <text>File No. 360</text>
+        </navLabel>
+        <content src="Text/part0053.html"/>
+      </navPoint>
+    </navPoint>
+    <navPoint class="chapter" id="num_55" playOrder="55">
+      <navLabel>
+        <text>Dedication</text>
+      </navLabel>
+      <content src="Text/part0054.html"/>
+    </navPoint>
+    <navPoint class="chapter" id="num_56" playOrder="56">
+      <navLabel>
+        <text>Acknowledgments</text>
+      </navLabel>
+      <content src="Text/part0055.html"/>
+    </navPoint>
+    <navPoint class="chapter" id="num_57" playOrder="57">
+      <navLabel>
+        <text>About the Author</text>
+      </navLabel>
+      <content src="Text/part0056.html"/>
+    </navPoint>
+  </navMap>
+</ncx>

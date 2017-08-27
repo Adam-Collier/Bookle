@@ -1,0 +1,459 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ncx version="2005-1" xmlns="http://www.daisy.org/z3986/2005/ncx/">
+  <head>
+    <meta name="dtb:uid" content="urn:uuid:3c51128f-b07d-44d3-b08c-40a028d8aa02" />
+    <meta name="dtb:depth" content="1" />
+    <meta name="dtb:totalPageCount" content="0" />
+    <meta name="dtb:maxPageNumber" content="0" />
+    <meta name="cover" content="cover_jpg" />
+  </head>
+  <docTitle>
+    <text>You Don’t Know JS</text>
+  </docTitle>
+  <navMap>
+    <navPoint id="navPoint-0">
+      <navLabel>
+        <text>You Don’t Know JS</text>
+      </navLabel>
+      <content src="title_page.xhtml" />
+    </navPoint>
+    <navPoint id="navPoint-1">
+      <navLabel>
+        <text>You Don’t Know JS: Async &amp; Performance</text>
+      </navLabel>
+      <content src="ch001.xhtml#you-dont-know-js-async-performance" />
+    </navPoint>
+    <navPoint id="navPoint-2">
+      <navLabel>
+        <text>Foreword</text>
+      </navLabel>
+      <content src="ch002.xhtml#foreword" />
+    </navPoint>
+    <navPoint id="navPoint-3">
+      <navLabel>
+        <text>You Don’t Know JS: Async &amp; Performance</text>
+      </navLabel>
+      <content src="ch003.xhtml#you-dont-know-js-async-performance-1" />
+    </navPoint>
+    <navPoint id="navPoint-4">
+      <navLabel>
+        <text>Chapter 1: Asynchrony: Now &amp; Later</text>
+      </navLabel>
+      <content src="ch004.xhtml#chapter-1-asynchrony-now-later" />
+      <navPoint id="navPoint-5">
+        <navLabel>
+          <text>A Program in Chunks</text>
+        </navLabel>
+        <content src="ch004.xhtml#a-program-in-chunks" />
+      </navPoint>
+      <navPoint id="navPoint-6">
+        <navLabel>
+          <text>Event Loop</text>
+        </navLabel>
+        <content src="ch004.xhtml#event-loop" />
+      </navPoint>
+      <navPoint id="navPoint-7">
+        <navLabel>
+          <text>Parallel Threading</text>
+        </navLabel>
+        <content src="ch004.xhtml#parallel-threading" />
+      </navPoint>
+      <navPoint id="navPoint-8">
+        <navLabel>
+          <text>Concurrency</text>
+        </navLabel>
+        <content src="ch004.xhtml#concurrency" />
+      </navPoint>
+      <navPoint id="navPoint-9">
+        <navLabel>
+          <text>Jobs</text>
+        </navLabel>
+        <content src="ch004.xhtml#jobs" />
+      </navPoint>
+      <navPoint id="navPoint-10">
+        <navLabel>
+          <text>Statement Ordering</text>
+        </navLabel>
+        <content src="ch004.xhtml#statement-ordering" />
+      </navPoint>
+      <navPoint id="navPoint-11">
+        <navLabel>
+          <text>Review</text>
+        </navLabel>
+        <content src="ch004.xhtml#review" />
+      </navPoint>
+    </navPoint>
+    <navPoint id="navPoint-12">
+      <navLabel>
+        <text>You Don’t Know JS: Async &amp; Performance</text>
+      </navLabel>
+      <content src="ch005.xhtml#you-dont-know-js-async-performance-2" />
+    </navPoint>
+    <navPoint id="navPoint-13">
+      <navLabel>
+        <text>Chapter 2: Callbacks</text>
+      </navLabel>
+      <content src="ch006.xhtml#chapter-2-callbacks" />
+      <navPoint id="navPoint-14">
+        <navLabel>
+          <text>Continuations</text>
+        </navLabel>
+        <content src="ch006.xhtml#continuations" />
+      </navPoint>
+      <navPoint id="navPoint-15">
+        <navLabel>
+          <text>Sequential Brain</text>
+        </navLabel>
+        <content src="ch006.xhtml#sequential-brain" />
+      </navPoint>
+      <navPoint id="navPoint-16">
+        <navLabel>
+          <text>Trust Issues</text>
+        </navLabel>
+        <content src="ch006.xhtml#trust-issues" />
+      </navPoint>
+      <navPoint id="navPoint-17">
+        <navLabel>
+          <text>Trying to Save Callbacks</text>
+        </navLabel>
+        <content src="ch006.xhtml#trying-to-save-callbacks" />
+      </navPoint>
+      <navPoint id="navPoint-18">
+        <navLabel>
+          <text>Review</text>
+        </navLabel>
+        <content src="ch006.xhtml#review-1" />
+      </navPoint>
+    </navPoint>
+    <navPoint id="navPoint-19">
+      <navLabel>
+        <text>You Don’t Know JS: Async &amp; Performance</text>
+      </navLabel>
+      <content src="ch007.xhtml#you-dont-know-js-async-performance-3" />
+    </navPoint>
+    <navPoint id="navPoint-20">
+      <navLabel>
+        <text>Chapter 3: Promises</text>
+      </navLabel>
+      <content src="ch008.xhtml#chapter-3-promises" />
+      <navPoint id="navPoint-21">
+        <navLabel>
+          <text>What Is a Promise?</text>
+        </navLabel>
+        <content src="ch008.xhtml#what-is-a-promise" />
+      </navPoint>
+      <navPoint id="navPoint-22">
+        <navLabel>
+          <text>Thenable Duck Typing</text>
+        </navLabel>
+        <content src="ch008.xhtml#thenable-duck-typing" />
+      </navPoint>
+      <navPoint id="navPoint-23">
+        <navLabel>
+          <text>Promise Trust</text>
+        </navLabel>
+        <content src="ch008.xhtml#promise-trust" />
+      </navPoint>
+      <navPoint id="navPoint-24">
+        <navLabel>
+          <text>Chain Flow</text>
+        </navLabel>
+        <content src="ch008.xhtml#chain-flow" />
+      </navPoint>
+      <navPoint id="navPoint-25">
+        <navLabel>
+          <text>Error Handling</text>
+        </navLabel>
+        <content src="ch008.xhtml#error-handling" />
+      </navPoint>
+      <navPoint id="navPoint-26">
+        <navLabel>
+          <text>Promise Patterns</text>
+        </navLabel>
+        <content src="ch008.xhtml#promise-patterns" />
+      </navPoint>
+      <navPoint id="navPoint-27">
+        <navLabel>
+          <text>Promise API Recap</text>
+        </navLabel>
+        <content src="ch008.xhtml#promise-api-recap" />
+      </navPoint>
+      <navPoint id="navPoint-28">
+        <navLabel>
+          <text>Promise Limitations</text>
+        </navLabel>
+        <content src="ch008.xhtml#promise-limitations" />
+      </navPoint>
+      <navPoint id="navPoint-29">
+        <navLabel>
+          <text>Review</text>
+        </navLabel>
+        <content src="ch008.xhtml#review-2" />
+      </navPoint>
+    </navPoint>
+    <navPoint id="navPoint-30">
+      <navLabel>
+        <text>You Don’t Know JS: Async &amp; Performance</text>
+      </navLabel>
+      <content src="ch009.xhtml#you-dont-know-js-async-performance-4" />
+    </navPoint>
+    <navPoint id="navPoint-31">
+      <navLabel>
+        <text>Chapter 4: Generators</text>
+      </navLabel>
+      <content src="ch010.xhtml#chapter-4-generators" />
+      <navPoint id="navPoint-32">
+        <navLabel>
+          <text>Breaking Run-to-Completion</text>
+        </navLabel>
+        <content src="ch010.xhtml#breaking-run-to-completion" />
+      </navPoint>
+      <navPoint id="navPoint-33">
+        <navLabel>
+          <text>Generator’ing Values</text>
+        </navLabel>
+        <content src="ch010.xhtml#generatoring-values" />
+      </navPoint>
+      <navPoint id="navPoint-34">
+        <navLabel>
+          <text>Iterating Generators Asynchronously</text>
+        </navLabel>
+        <content src="ch010.xhtml#iterating-generators-asynchronously" />
+      </navPoint>
+      <navPoint id="navPoint-35">
+        <navLabel>
+          <text>Generators + Promises</text>
+        </navLabel>
+        <content src="ch010.xhtml#generators-promises" />
+      </navPoint>
+      <navPoint id="navPoint-36">
+        <navLabel>
+          <text>Generator Delegation</text>
+        </navLabel>
+        <content src="ch010.xhtml#generator-delegation" />
+      </navPoint>
+      <navPoint id="navPoint-37">
+        <navLabel>
+          <text>Generator Concurrency</text>
+        </navLabel>
+        <content src="ch010.xhtml#generator-concurrency" />
+      </navPoint>
+      <navPoint id="navPoint-38">
+        <navLabel>
+          <text>Thunks</text>
+        </navLabel>
+        <content src="ch010.xhtml#thunks" />
+      </navPoint>
+      <navPoint id="navPoint-39">
+        <navLabel>
+          <text>Pre-ES6 Generators</text>
+        </navLabel>
+        <content src="ch010.xhtml#pre-es6-generators" />
+      </navPoint>
+      <navPoint id="navPoint-40">
+        <navLabel>
+          <text>Review</text>
+        </navLabel>
+        <content src="ch010.xhtml#review-3" />
+      </navPoint>
+    </navPoint>
+    <navPoint id="navPoint-41">
+      <navLabel>
+        <text>You Don’t Know JS: Async &amp; Performance</text>
+      </navLabel>
+      <content src="ch011.xhtml#you-dont-know-js-async-performance-5" />
+    </navPoint>
+    <navPoint id="navPoint-42">
+      <navLabel>
+        <text>Chapter 5: Program Performance</text>
+      </navLabel>
+      <content src="ch012.xhtml#chapter-5-program-performance" />
+      <navPoint id="navPoint-43">
+        <navLabel>
+          <text>Web Workers</text>
+        </navLabel>
+        <content src="ch012.xhtml#web-workers" />
+      </navPoint>
+      <navPoint id="navPoint-44">
+        <navLabel>
+          <text>SIMD</text>
+        </navLabel>
+        <content src="ch012.xhtml#simd" />
+      </navPoint>
+      <navPoint id="navPoint-45">
+        <navLabel>
+          <text>asm.js</text>
+        </navLabel>
+        <content src="ch012.xhtml#asm.js" />
+      </navPoint>
+      <navPoint id="navPoint-46">
+        <navLabel>
+          <text>Review</text>
+        </navLabel>
+        <content src="ch012.xhtml#review-4" />
+      </navPoint>
+    </navPoint>
+    <navPoint id="navPoint-47">
+      <navLabel>
+        <text>You Don’t Know JS: Async &amp; Performance</text>
+      </navLabel>
+      <content src="ch013.xhtml#you-dont-know-js-async-performance-6" />
+    </navPoint>
+    <navPoint id="navPoint-48">
+      <navLabel>
+        <text>Chapter 6: Benchmarking &amp; Tuning</text>
+      </navLabel>
+      <content src="ch014.xhtml#chapter-6-benchmarking-tuning" />
+      <navPoint id="navPoint-49">
+        <navLabel>
+          <text>Benchmarking</text>
+        </navLabel>
+        <content src="ch014.xhtml#benchmarking" />
+      </navPoint>
+      <navPoint id="navPoint-50">
+        <navLabel>
+          <text>Context Is King</text>
+        </navLabel>
+        <content src="ch014.xhtml#context-is-king" />
+      </navPoint>
+      <navPoint id="navPoint-51">
+        <navLabel>
+          <text>jsPerf.com</text>
+        </navLabel>
+        <content src="ch014.xhtml#jsperf.com" />
+      </navPoint>
+      <navPoint id="navPoint-52">
+        <navLabel>
+          <text>Writing Good Tests</text>
+        </navLabel>
+        <content src="ch014.xhtml#writing-good-tests" />
+      </navPoint>
+      <navPoint id="navPoint-53">
+        <navLabel>
+          <text>Microperformance</text>
+        </navLabel>
+        <content src="ch014.xhtml#microperformance" />
+      </navPoint>
+      <navPoint id="navPoint-54">
+        <navLabel>
+          <text>Tail Call Optimization (TCO)</text>
+        </navLabel>
+        <content src="ch014.xhtml#tail-call-optimization-tco" />
+      </navPoint>
+      <navPoint id="navPoint-55">
+        <navLabel>
+          <text>Review</text>
+        </navLabel>
+        <content src="ch014.xhtml#review-5" />
+      </navPoint>
+    </navPoint>
+    <navPoint id="navPoint-56">
+      <navLabel>
+        <text>You Don’t Know JS: Async &amp; Performance</text>
+      </navLabel>
+      <content src="ch015.xhtml#you-dont-know-js-async-performance-7" />
+    </navPoint>
+    <navPoint id="navPoint-57">
+      <navLabel>
+        <text>Appendix A: asynquence Library</text>
+      </navLabel>
+      <content src="ch016.xhtml#appendix-a-asynquence-library" />
+      <navPoint id="navPoint-58">
+        <navLabel>
+          <text>Sequences, Abstraction Design</text>
+        </navLabel>
+        <content src="ch016.xhtml#sequences-abstraction-design" />
+      </navPoint>
+      <navPoint id="navPoint-59">
+        <navLabel>
+          <text>asynquence API</text>
+        </navLabel>
+        <content src="ch016.xhtml#asynquence-api" />
+      </navPoint>
+      <navPoint id="navPoint-60">
+        <navLabel>
+          <text>Value and Error Sequences</text>
+        </navLabel>
+        <content src="ch016.xhtml#value-and-error-sequences" />
+      </navPoint>
+      <navPoint id="navPoint-61">
+        <navLabel>
+          <text>Promises and Callbacks</text>
+        </navLabel>
+        <content src="ch016.xhtml#promises-and-callbacks" />
+      </navPoint>
+      <navPoint id="navPoint-62">
+        <navLabel>
+          <text>Iterable Sequences</text>
+        </navLabel>
+        <content src="ch016.xhtml#iterable-sequences" />
+      </navPoint>
+      <navPoint id="navPoint-63">
+        <navLabel>
+          <text>Running Generators</text>
+        </navLabel>
+        <content src="ch016.xhtml#running-generators" />
+      </navPoint>
+      <navPoint id="navPoint-64">
+        <navLabel>
+          <text>Review</text>
+        </navLabel>
+        <content src="ch016.xhtml#review-6" />
+      </navPoint>
+    </navPoint>
+    <navPoint id="navPoint-65">
+      <navLabel>
+        <text>You Don’t Know JS: Async &amp; Performance</text>
+      </navLabel>
+      <content src="ch017.xhtml#you-dont-know-js-async-performance-8" />
+    </navPoint>
+    <navPoint id="navPoint-66">
+      <navLabel>
+        <text>Appendix B: Advanced Async Patterns</text>
+      </navLabel>
+      <content src="ch018.xhtml#appendix-b-advanced-async-patterns" />
+      <navPoint id="navPoint-67">
+        <navLabel>
+          <text>Iterable Sequences</text>
+        </navLabel>
+        <content src="ch018.xhtml#iterable-sequences-1" />
+      </navPoint>
+      <navPoint id="navPoint-68">
+        <navLabel>
+          <text>Event Reactive</text>
+        </navLabel>
+        <content src="ch018.xhtml#event-reactive" />
+      </navPoint>
+      <navPoint id="navPoint-69">
+        <navLabel>
+          <text>Generator Coroutine</text>
+        </navLabel>
+        <content src="ch018.xhtml#generator-coroutine" />
+      </navPoint>
+      <navPoint id="navPoint-70">
+        <navLabel>
+          <text>Communicating Sequential Processes (CSP)</text>
+        </navLabel>
+        <content src="ch018.xhtml#communicating-sequential-processes-csp" />
+      </navPoint>
+      <navPoint id="navPoint-71">
+        <navLabel>
+          <text>Review</text>
+        </navLabel>
+        <content src="ch018.xhtml#review-7" />
+      </navPoint>
+    </navPoint>
+    <navPoint id="navPoint-72">
+      <navLabel>
+        <text>You Don’t Know JS: Async &amp; Performance</text>
+      </navLabel>
+      <content src="ch019.xhtml#you-dont-know-js-async-performance-9" />
+    </navPoint>
+    <navPoint id="navPoint-73">
+      <navLabel>
+        <text>Appendix C: Acknowledgments</text>
+      </navLabel>
+      <content src="ch020.xhtml#appendix-c-acknowledgments" />
+    </navPoint>
+  </navMap>
+</ncx>

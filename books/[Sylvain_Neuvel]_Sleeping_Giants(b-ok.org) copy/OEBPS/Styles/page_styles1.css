@@ -1,0 +1,14 @@
+@page {
+    margin-bottom: 5pt;
+    margin-top: 5pt
+    }
+@font-face {
+    font-style: normal;
+    font-weight: normal;
+    src: url(styles/fonts/Shift-Light.otf)
+    }
+@font-face {
+    font-style: italic;
+    font-weight: normal;
+    src: url(styles/fonts/Shift-BoldItalic.otf)
+    }

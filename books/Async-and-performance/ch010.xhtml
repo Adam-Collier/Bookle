@@ -1,0 +1,1787 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title>Chapter 4: Generators</title>
+  <style type="text/css">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+code > span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code > span.dt { color: #902000; } /* DataType */
+code > span.dv { color: #40a070; } /* DecVal */
+code > span.bn { color: #40a070; } /* BaseN */
+code > span.fl { color: #40a070; } /* Float */
+code > span.ch { color: #4070a0; } /* Char */
+code > span.st { color: #4070a0; } /* String */
+code > span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code > span.ot { color: #007020; } /* Other */
+code > span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code > span.fu { color: #06287e; } /* Function */
+code > span.er { color: #ff0000; font-weight: bold; } /* Error */
+code > span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+code > span.cn { color: #880000; } /* Constant */
+code > span.sc { color: #4070a0; } /* SpecialChar */
+code > span.vs { color: #4070a0; } /* VerbatimString */
+code > span.ss { color: #bb6688; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { color: #19177c; } /* Variable */
+code > span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code > span.op { color: #666666; } /* Operator */
+code > span.bu { } /* BuiltIn */
+code > span.ex { } /* Extension */
+code > span.pp { color: #bc7a00; } /* Preprocessor */
+code > span.at { color: #7d9029; } /* Attribute */
+code > span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code > span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code > span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+  </style>
+  <link rel="stylesheet" type="text/css" href="stylesheet.css" />
+</head>
+<body>
+<div id="chapter-4-generators" class="section level1">
+<h1>Chapter 4: Generators</h1>
+<p>In Chapter 2, we identified two key drawbacks to expressing async flow control with callbacks:</p>
+<ul>
+<li>Callback-based async doesn’t fit how our brain plans out steps of a task.</li>
+<li>Callbacks aren’t trustable or composable because of <em>inversion of control</em>.</li>
+</ul>
+<p>In Chapter 3, we detailed how Promises uninvert the <em>inversion of control</em> of callbacks, restoring trustability/composability.</p>
+<p>Now we turn our attention to expressing async flow control in a sequential, synchronous-looking fashion. The “magic” that makes it possible is ES6 <strong>generators</strong>.</p>
+<div id="breaking-run-to-completion" class="section level2">
+<h2>Breaking Run-to-Completion</h2>
+<p>In Chapter 1, we explained an expectation that JS developers almost universally rely on in their code: once a function starts executing, it runs until it completes, and no other code can interrupt and run in between.</p>
+<p>As bizarre as it may seem, ES6 introduces a new type of function that does not behave with the run-to-completion behavior. This new type of function is called a “generator.”</p>
+<p>To understand the implications, let’s consider this example:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="kw">var</span> x <span class="op">=</span> <span class="dv">1</span><span class="op">;</span>
+
+<span class="kw">function</span> <span class="at">foo</span>() <span class="op">{</span>
+    x<span class="op">++;</span>
+    <span class="at">bar</span>()<span class="op">;</span>              <span class="co">// &lt;-- what about this line?</span>
+    <span class="va">console</span>.<span class="at">log</span>( <span class="st">&quot;x:&quot;</span><span class="op">,</span> x )<span class="op">;</span>
+<span class="op">}</span>
+
+<span class="kw">function</span> <span class="at">bar</span>() <span class="op">{</span>
+    x<span class="op">++;</span>
+<span class="op">}</span>
+
+<span class="at">foo</span>()<span class="op">;</span>                  <span class="co">// x: 3</span></code></pre></div>
+<p>In this example, we know for sure that <code>bar()</code> runs in between <code>x++</code> and <code>console.log(x)</code>. But what if <code>bar()</code> wasn’t there? Obviously the result would be <code>2</code> instead of <code>3</code>.</p>
+<p>Now let’s twist your brain. What if <code>bar()</code> wasn’t present, but it could still somehow run between the <code>x++</code> and <code>console.log(x)</code> statements? How would that be possible?</p>
+<p>In <strong>preemptive</strong> multithreaded languages, it would essentially be possible for <code>bar()</code> to “interrupt” and run at exactly the right moment between those two statements. But JS is not preemptive, nor is it (currently) multithreaded. And yet, a <strong>cooperative</strong> form of this “interruption” (concurrency) is possible, if <code>foo()</code> itself could somehow indicate a “pause” at that part in the code.</p>
+<p><strong>Note:</strong> I use the word “cooperative” not only because of the connection to classical concurrency terminology (see Chapter 1), but because as you’ll see in the next snippet, the ES6 syntax for indicating a pause point in code is <code>yield</code> – suggesting a politely <em>cooperative</em> yielding of control.</p>
+<p>Here’s the ES6 code to accomplish such cooperative concurrency:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="kw">var</span> x <span class="op">=</span> <span class="dv">1</span><span class="op">;</span>
+
+<span class="kw">function</span> <span class="op">*</span><span class="at">foo</span>() <span class="op">{</span>
+    x<span class="op">++;</span>
+    <span class="kw">yield</span><span class="op">;</span> <span class="co">// pause!</span>
+    <span class="va">console</span>.<span class="at">log</span>( <span class="st">&quot;x:&quot;</span><span class="op">,</span> x )<span class="op">;</span>
+<span class="op">}</span>
+
+<span class="kw">function</span> <span class="at">bar</span>() <span class="op">{</span>
+    x<span class="op">++;</span>
+<span class="op">}</span></code></pre></div>
+<p><strong>Note:</strong> You will likely see most other JS documentation/code that will format a generator declaration as <code>function* foo() { .. }</code> instead of as I’ve done here with <code>function *foo() { .. }</code> – the only difference being the stylistic positioning of the <code>*</code>. The two forms are functionally/syntactically identical, as is a third <code>function*foo() { .. }</code> (no space) form. There are arguments for both styles, but I basically prefer <code>function *foo..</code> because it then matches when I reference a generator in writing with <code>*foo()</code>. If I said only <code>foo()</code>, you wouldn’t know as clearly if I was talking about a generator or a regular function. It’s purely a stylistic preference.</p>
+<p>Now, how can we run the code in that previous snippet such that <code>bar()</code> executes at the point of the <code>yield</code> inside of <code>*foo()</code>?</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="co">// construct an iterator `it` to control the generator</span>
+<span class="kw">var</span> it <span class="op">=</span> <span class="at">foo</span>()<span class="op">;</span>
+
+<span class="co">// start `foo()` here!</span>
+<span class="va">it</span>.<span class="at">next</span>()<span class="op">;</span>
+x<span class="op">;</span>                      <span class="co">// 2</span>
+<span class="at">bar</span>()<span class="op">;</span>
+x<span class="op">;</span>                      <span class="co">// 3</span>
+<span class="va">it</span>.<span class="at">next</span>()<span class="op">;</span>              <span class="co">// x: 3</span></code></pre></div>
+<p>OK, there’s quite a bit of new and potentially confusing stuff in those two code snippets, so we’ve got plenty to wade through. But before we explain the different mechanics/syntax with ES6 generators, let’s walk through the behavior flow:</p>
+<ol style="list-style-type: decimal">
+<li>The <code>it = foo()</code> operation does <em>not</em> execute the <code>*foo()</code> generator yet, but it merely constructs an <em>iterator</em> that will control its execution. More on <em>iterators</em> in a bit.</li>
+<li>The first <code>it.next()</code> starts the <code>*foo()</code> generator, and runs the <code>x++</code> on the first line of <code>*foo()</code>.</li>
+<li><code>*foo()</code> pauses at the <code>yield</code> statement, at which point that first <code>it.next()</code> call finishes. At the moment, <code>*foo()</code> is still running and active, but it’s in a paused state.</li>
+<li>We inspect the value of <code>x</code>, and it’s now <code>2</code>.</li>
+<li>We call <code>bar()</code>, which increments <code>x</code> again with <code>x++</code>.</li>
+<li>We inspect the value of <code>x</code> again, and it’s now <code>3</code>.</li>
+<li>The final <code>it.next()</code> call resumes the <code>*foo()</code> generator from where it was paused, and runs the <code>console.log(..)</code> statement, which uses the current value of <code>x</code> of <code>3</code>.</li>
+</ol>
+<p>Clearly, <code>*foo()</code> started, but did <em>not</em> run-to-completion – it paused at the <code>yield</code>. We resumed <code>*foo()</code> later, and let it finish, but that wasn’t even required.</p>
+<p>So, a generator is a special kind of function that can start and stop one or more times, and doesn’t necessarily ever have to finish. While it won’t be terribly obvious yet why that’s so powerful, as we go throughout the rest of this chapter, that will be one of the fundamental building blocks we use to construct generators-as-async-flow-control as a pattern for our code.</p>
+<div id="input-and-output" class="section level3">
+<h3>Input and Output</h3>
+<p>A generator function is a special function with the new processing model we just alluded to. But it’s still a function, which means it still has some basic tenets that haven’t changed – namely, that it still accepts arguments (aka “input”), and that it can still return a value (aka “output”):</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="kw">function</span> <span class="op">*</span><span class="at">foo</span>(x<span class="op">,</span>y) <span class="op">{</span>
+    <span class="cf">return</span> x <span class="op">*</span> y<span class="op">;</span>
+<span class="op">}</span>
+
+<span class="kw">var</span> it <span class="op">=</span> <span class="at">foo</span>( <span class="dv">6</span><span class="op">,</span> <span class="dv">7</span> )<span class="op">;</span>
+
+<span class="kw">var</span> res <span class="op">=</span> <span class="va">it</span>.<span class="at">next</span>()<span class="op">;</span>
+
+<span class="va">res</span>.<span class="at">value</span><span class="op">;</span>      <span class="co">// 42</span></code></pre></div>
+<p>We pass in the arguments <code>6</code> and <code>7</code> to <code>*foo(..)</code> as the parameters <code>x</code> and <code>y</code>, respectively. And <code>*foo(..)</code> returns the value <code>42</code> back to the calling code.</p>
+<p>We now see a difference with how the generator is invoked compared to a normal function. <code>foo(6,7)</code> obviously looks familiar. But subtly, the <code>*foo(..)</code> generator hasn’t actually run yet as it would have with a function.</p>
+<p>Instead, we’re just creating an <em>iterator</em> object, which we assign to the variable <code>it</code>, to control the <code>*foo(..)</code> generator. Then we call <code>it.next()</code>, which instructs the <code>*foo(..)</code> generator to advance from its current location, stopping either at the next <code>yield</code> or end of the generator.</p>
+<p>The result of that <code>next(..)</code> call is an object with a <code>value</code> property on it holding whatever value (if anything) was returned from <code>*foo(..)</code>. In other words, <code>yield</code> caused a value to be sent out from the generator during the middle of its execution, kind of like an intermediate <code>return</code>.</p>
+<p>Again, it won’t be obvious yet why we need this whole indirect <em>iterator</em> object to control the generator. We’ll get there, I <em>promise</em>.</p>
+<div id="iteration-messaging" class="section level4">
+<h4>Iteration Messaging</h4>
+<p>In addition to generators accepting arguments and having return values, there’s even more powerful and compelling input/output messaging capability built into them, via <code>yield</code> and <code>next(..)</code>.</p>
+<p>Consider:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="kw">function</span> <span class="op">*</span><span class="at">foo</span>(x) <span class="op">{</span>
+    <span class="kw">var</span> y <span class="op">=</span> x <span class="op">*</span> (<span class="kw">yield</span>)<span class="op">;</span>
+    <span class="cf">return</span> y<span class="op">;</span>
+<span class="op">}</span>
+
+<span class="kw">var</span> it <span class="op">=</span> <span class="at">foo</span>( <span class="dv">6</span> )<span class="op">;</span>
+
+<span class="co">// start `foo(..)`</span>
+<span class="va">it</span>.<span class="at">next</span>()<span class="op">;</span>
+
+<span class="kw">var</span> res <span class="op">=</span> <span class="va">it</span>.<span class="at">next</span>( <span class="dv">7</span> )<span class="op">;</span>
+
+<span class="va">res</span>.<span class="at">value</span><span class="op">;</span>      <span class="co">// 42</span></code></pre></div>
+<p>First, we pass in <code>6</code> as the parameter <code>x</code>. Then we call <code>it.next()</code>, and it starts up <code>*foo(..)</code>.</p>
+<p>Inside <code>*foo(..)</code>, the <code>var y = x ..</code> statement starts to be processed, but then it runs across a <code>yield</code> expression. At that point, it pauses <code>*foo(..)</code> (in the middle of the assignment statement!), and essentially requests the calling code to provide a result value for the <code>yield</code> expression. Next, we call <code>it.next( 7 )</code>, which is passing the <code>7</code> value back in to <em>be</em> that result of the paused <code>yield</code> expression.</p>
+<p>So, at this point, the assignment statement is essentially <code>var y = 6 * 7</code>. Now, <code>return y</code> returns that <code>42</code> value back as the result of the <code>it.next( 7 )</code> call.</p>
+<p>Notice something very important but also easily confusing, even to seasoned JS developers: depending on your perspective, there’s a mismatch between the <code>yield</code> and the <code>next(..)</code> call. In general, you’re going to have one more <code>next(..)</code> call than you have <code>yield</code> statements – the preceding snippet has one <code>yield</code> and two <code>next(..)</code> calls.</p>
+<p>Why the mismatch?</p>
+<p>Because the first <code>next(..)</code> always starts a generator, and runs to the first <code>yield</code>. But it’s the second <code>next(..)</code> call that fulfills the first paused <code>yield</code> expression, and the third <code>next(..)</code> would fulfill the second <code>yield</code>, and so on.</p>
+<div id="tale-of-two-questions" class="section level5">
+<h5>Tale of Two Questions</h5>
+<p>Actually, which code you’re thinking about primarily will affect whether there’s a perceived mismatch or not.</p>
+<p>Consider only the generator code:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="kw">var</span> y <span class="op">=</span> x <span class="op">*</span> (<span class="kw">yield</span>)<span class="op">;</span>
+<span class="cf">return</span> y<span class="op">;</span></code></pre></div>
+<p>This <strong>first</strong> <code>yield</code> is basically <em>asking a question</em>: “What value should I insert here?”</p>
+<p>Who’s going to answer that question? Well, the <strong>first</strong> <code>next()</code> has already run to get the generator up to this point, so obviously <em>it</em> can’t answer the question. So, the <strong>second</strong> <code>next(..)</code> call must answer the question <em>posed</em> by the <strong>first</strong> <code>yield</code>.</p>
+<p>See the mismatch – second-to-first?</p>
+<p>But let’s flip our perspective. Let’s look at it not from the generator’s point of view, but from the iterator’s point of view.</p>
+<p>To properly illustrate this perspective, we also need to explain that messages can go in both directions – <code>yield ..</code> as an expression can send out messages in response to <code>next(..)</code> calls, and <code>next(..)</code> can send values to a paused <code>yield</code> expression. Consider this slightly adjusted code:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="kw">function</span> <span class="op">*</span><span class="at">foo</span>(x) <span class="op">{</span>
+    <span class="kw">var</span> y <span class="op">=</span> x <span class="op">*</span> (<span class="kw">yield</span> <span class="st">&quot;Hello&quot;</span>)<span class="op">;</span>    <span class="co">// &lt;-- yield a value!</span>
+    <span class="cf">return</span> y<span class="op">;</span>
+<span class="op">}</span>
+
+<span class="kw">var</span> it <span class="op">=</span> <span class="at">foo</span>( <span class="dv">6</span> )<span class="op">;</span>
+
+<span class="kw">var</span> res <span class="op">=</span> <span class="va">it</span>.<span class="at">next</span>()<span class="op">;</span>    <span class="co">// first `next()`, don&#39;t pass anything</span>
+<span class="va">res</span>.<span class="at">value</span><span class="op">;</span>              <span class="co">// &quot;Hello&quot;</span>
+
+res <span class="op">=</span> <span class="va">it</span>.<span class="at">next</span>( <span class="dv">7</span> )<span class="op">;</span>     <span class="co">// pass `7` to waiting `yield`</span>
+<span class="va">res</span>.<span class="at">value</span><span class="op">;</span>              <span class="co">// 42</span></code></pre></div>
+<p><code>yield ..</code> and <code>next(..)</code> pair together as a two-way message passing system <strong>during the execution of the generator</strong>.</p>
+<p>So, looking only at the <em>iterator</em> code:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="kw">var</span> res <span class="op">=</span> <span class="va">it</span>.<span class="at">next</span>()<span class="op">;</span>    <span class="co">// first `next()`, don&#39;t pass anything</span>
+<span class="va">res</span>.<span class="at">value</span><span class="op">;</span>              <span class="co">// &quot;Hello&quot;</span>
+
+res <span class="op">=</span> <span class="va">it</span>.<span class="at">next</span>( <span class="dv">7</span> )<span class="op">;</span>     <span class="co">// pass `7` to waiting `yield`</span>
+<span class="va">res</span>.<span class="at">value</span><span class="op">;</span>              <span class="co">// 42</span></code></pre></div>
+<p><strong>Note:</strong> We don’t pass a value to the first <code>next()</code> call, and that’s on purpose. Only a paused <code>yield</code> could accept such a value passed by a <code>next(..)</code>, and at the beginning of the generator when we call the first <code>next()</code>, there <strong>is no paused <code>yield</code></strong> to accept such a value. The specification and all compliant browsers just silently <strong>discard</strong> anything passed to the first <code>next()</code>. It’s still a bad idea to pass a value, as you’re just creating silently “failing” code that’s confusing. So, always start a generator with an argument-free <code>next()</code>.</p>
+<p>The first <code>next()</code> call (with nothing passed to it) is basically <em>asking a question</em>: “What <em>next</em> value does the <code>*foo(..)</code> generator have to give me?” And who answers this question? The first <code>yield &quot;hello&quot;</code> expression.</p>
+<p>See? No mismatch there.</p>
+<p>Depending on <em>who</em> you think about asking the question, there is either a mismatch between the <code>yield</code> and <code>next(..)</code> calls, or not.</p>
+<p>But wait! There’s still an extra <code>next()</code> compared to the number of <code>yield</code> statements. So, that final <code>it.next(7)</code> call is again asking the question about what <em>next</em> value the generator will produce. But there’s no more <code>yield</code> statements left to answer, is there? So who answers?</p>
+<p>The <code>return</code> statement answers the question!</p>
+<p>And if there <strong>is no <code>return</code></strong> in your generator – <code>return</code> is certainly not any more required in generators than in regular functions – there’s always an assumed/implicit <code>return;</code> (aka <code>return undefined;</code>), which serves the purpose of default answering the question <em>posed</em> by the final <code>it.next(7)</code> call.</p>
+<p>These questions and answers – the two-way message passing with <code>yield</code> and <code>next(..)</code> – are quite powerful, but it’s not obvious at all how these mechanisms are connected to async flow control. We’re getting there!</p>
+</div>
+</div>
+</div>
+<div id="multiple-iterators" class="section level3">
+<h3>Multiple Iterators</h3>
+<p>It may appear from the syntactic usage that when you use an <em>iterator</em> to control a generator, you’re controlling the declared generator function itself. But there’s a subtlety that’s easy to miss: each time you construct an <em>iterator</em>, you are implicitly constructing an instance of the generator which that <em>iterator</em> will control.</p>
+<p>You can have multiple instances of the same generator running at the same time, and they can even interact:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="kw">function</span> <span class="op">*</span><span class="at">foo</span>() <span class="op">{</span>
+    <span class="kw">var</span> x <span class="op">=</span> <span class="kw">yield</span> <span class="dv">2</span><span class="op">;</span>
+    z<span class="op">++;</span>
+    <span class="kw">var</span> y <span class="op">=</span> <span class="kw">yield</span> (x <span class="op">*</span> z)<span class="op">;</span>
+    <span class="va">console</span>.<span class="at">log</span>( x<span class="op">,</span> y<span class="op">,</span> z )<span class="op">;</span>
+<span class="op">}</span>
+
+<span class="kw">var</span> z <span class="op">=</span> <span class="dv">1</span><span class="op">;</span>
+
+<span class="kw">var</span> it1 <span class="op">=</span> <span class="at">foo</span>()<span class="op">;</span>
+<span class="kw">var</span> it2 <span class="op">=</span> <span class="at">foo</span>()<span class="op">;</span>
+
+<span class="kw">var</span> val1 <span class="op">=</span> <span class="va">it1</span>.<span class="at">next</span>().<span class="at">value</span><span class="op">;</span>            <span class="co">// 2 &lt;-- yield 2</span>
+<span class="kw">var</span> val2 <span class="op">=</span> <span class="va">it2</span>.<span class="at">next</span>().<span class="at">value</span><span class="op">;</span>            <span class="co">// 2 &lt;-- yield 2</span>
+
+val1 <span class="op">=</span> <span class="va">it1</span>.<span class="at">next</span>( val2 <span class="op">*</span> <span class="dv">10</span> ).<span class="at">value</span><span class="op">;</span>     <span class="co">// 40  &lt;-- x:20,  z:2</span>
+val2 <span class="op">=</span> <span class="va">it2</span>.<span class="at">next</span>( val1 <span class="op">*</span> <span class="dv">5</span> ).<span class="at">value</span><span class="op">;</span>      <span class="co">// 600 &lt;-- x:200, z:3</span>
+
+<span class="va">it1</span>.<span class="at">next</span>( val2 / <span class="dv">2</span> )<span class="op">;</span>                   <span class="co">// y:300</span>
+                                        <span class="co">// 20 300 3</span>
+<span class="va">it2</span>.<span class="at">next</span>( val1 / <span class="dv">4</span> )<span class="op">;</span>                   <span class="co">// y:10</span>
+                                        <span class="co">// 200 10 3</span></code></pre></div>
+<p><strong>Warning:</strong> The most common usage of multiple instances of the same generator running concurrently is not such interactions, but when the generator is producing its own values without input, perhaps from some independently connected resource. We’ll talk more about value production in the next section.</p>
+<p>Let’s briefly walk through the processing:</p>
+<ol style="list-style-type: decimal">
+<li>Both instances of <code>*foo()</code> are started at the same time, and both <code>next()</code> calls reveal a <code>value</code> of <code>2</code> from the <code>yield 2</code> statements, respectively.</li>
+<li><code>val2 * 10</code> is <code>2 * 10</code>, which is sent into the first generator instance <code>it1</code>, so that <code>x</code> gets value <code>20</code>. <code>z</code> is incremented from <code>1</code> to <code>2</code>, and then <code>20 * 2</code> is <code>yield</code>ed out, setting <code>val1</code> to <code>40</code>.</li>
+<li><code>val1 * 5</code> is <code>40 * 5</code>, which is sent into the second generator instance <code>it2</code>, so that <code>x</code> gets value <code>200</code>. <code>z</code> is incremented again, from <code>2</code> to <code>3</code>, and then <code>200 * 3</code> is <code>yield</code>ed out, setting <code>val2</code> to <code>600</code>.</li>
+<li><code>val2 / 2</code> is <code>600 / 2</code>, which is sent into the first generator instance <code>it1</code>, so that <code>y</code> gets value <code>300</code>, then printing out <code>20 300 3</code> for its <code>x y z</code> values, respectively.</li>
+<li><code>val1 / 4</code> is <code>40 / 4</code>, which is sent into the second generator instance <code>it2</code>, so that <code>y</code> gets value <code>10</code>, then printing out <code>200 10 3</code> for its <code>x y z</code> values, respectively.</li>
+</ol>
+<p>That’s a “fun” example to run through in your mind. Did you keep it straight?</p>
+<div id="interleaving" class="section level4">
+<h4>Interleaving</h4>
+<p>Recall this scenario from the “Run-to-completion” section of Chapter 1:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="kw">var</span> a <span class="op">=</span> <span class="dv">1</span><span class="op">;</span>
+<span class="kw">var</span> b <span class="op">=</span> <span class="dv">2</span><span class="op">;</span>
+
+<span class="kw">function</span> <span class="at">foo</span>() <span class="op">{</span>
+    a<span class="op">++;</span>
+    b <span class="op">=</span> b <span class="op">*</span> a<span class="op">;</span>
+    a <span class="op">=</span> b <span class="op">+</span> <span class="dv">3</span><span class="op">;</span>
+<span class="op">}</span>
+
+<span class="kw">function</span> <span class="at">bar</span>() <span class="op">{</span>
+    b<span class="op">--;</span>
+    a <span class="op">=</span> <span class="dv">8</span> <span class="op">+</span> b<span class="op">;</span>
+    b <span class="op">=</span> a <span class="op">*</span> <span class="dv">2</span><span class="op">;</span>
+<span class="op">}</span></code></pre></div>
+<p>With normal JS functions, of course either <code>foo()</code> can run completely first, or <code>bar()</code> can run completely first, but <code>foo()</code> cannot interleave its individual statements with <code>bar()</code>. So, there are only two possible outcomes to the preceding program.</p>
+<p>However, with generators, clearly interleaving (even in the middle of statements!) is possible:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="kw">var</span> a <span class="op">=</span> <span class="dv">1</span><span class="op">;</span>
+<span class="kw">var</span> b <span class="op">=</span> <span class="dv">2</span><span class="op">;</span>
+
+<span class="kw">function</span> <span class="op">*</span><span class="at">foo</span>() <span class="op">{</span>
+    a<span class="op">++;</span>
+    <span class="kw">yield</span><span class="op">;</span>
+    b <span class="op">=</span> b <span class="op">*</span> a<span class="op">;</span>
+    a <span class="op">=</span> (<span class="kw">yield</span> b) <span class="op">+</span> <span class="dv">3</span><span class="op">;</span>
+<span class="op">}</span>
+
+<span class="kw">function</span> <span class="op">*</span><span class="at">bar</span>() <span class="op">{</span>
+    b<span class="op">--;</span>
+    <span class="kw">yield</span><span class="op">;</span>
+    a <span class="op">=</span> (<span class="kw">yield</span> <span class="dv">8</span>) <span class="op">+</span> b<span class="op">;</span>
+    b <span class="op">=</span> a <span class="op">*</span> (<span class="kw">yield</span> <span class="dv">2</span>)<span class="op">;</span>
+<span class="op">}</span></code></pre></div>
+<p>Depending on what respective order the <em>iterators</em> controlling <code>*foo()</code> and <code>*bar()</code> are called, the preceding program could produce several different results. In other words, we can actually illustrate (in a sort of fake-ish way) the theoretical “threaded race conditions” circumstances discussed in Chapter 1, by interleaving the two generator interations over the same shared variables.</p>
+<p>First, let’s make a helper called <code>step(..)</code> that controls an <em>iterator</em>:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="kw">function</span> <span class="at">step</span>(gen) <span class="op">{</span>
+    <span class="kw">var</span> it <span class="op">=</span> <span class="at">gen</span>()<span class="op">;</span>
+    <span class="kw">var</span> last<span class="op">;</span>
+
+    <span class="cf">return</span> <span class="kw">function</span>() <span class="op">{</span>
+        <span class="co">// whatever is `yield`ed out, just</span>
+        <span class="co">// send it right back in the next time!</span>
+        last <span class="op">=</span> <span class="va">it</span>.<span class="at">next</span>( last ).<span class="at">value</span><span class="op">;</span>
+    <span class="op">};</span>
+<span class="op">}</span></code></pre></div>
+<p><code>step(..)</code> initializes a generator to create its <code>it</code> <em>iterator</em>, then returns a function which, when called, advances the <em>iterator</em> by one step. Additionally, the previously <code>yield</code>ed out value is sent right back in at the <em>next</em> step. So, <code>yield 8</code> will just become <code>8</code> and <code>yield b</code> will just be <code>b</code> (whatever it was at the time of <code>yield</code>).</p>
+<p>Now, just for fun, let’s experiment to see the effects of interleaving these different chunks of <code>*foo()</code> and <code>*bar()</code>. We’ll start with the boring base case, making sure <code>*foo()</code> totally finishes before <code>*bar()</code> (just like we did in Chapter 1):</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="co">// make sure to reset `a` and `b`</span>
+a <span class="op">=</span> <span class="dv">1</span><span class="op">;</span>
+b <span class="op">=</span> <span class="dv">2</span><span class="op">;</span>
+
+<span class="kw">var</span> s1 <span class="op">=</span> <span class="at">step</span>( foo )<span class="op">;</span>
+<span class="kw">var</span> s2 <span class="op">=</span> <span class="at">step</span>( bar )<span class="op">;</span>
+
+<span class="co">// run `*foo()` completely first</span>
+<span class="at">s1</span>()<span class="op">;</span>
+<span class="at">s1</span>()<span class="op">;</span>
+<span class="at">s1</span>()<span class="op">;</span>
+
+<span class="co">// now run `*bar()`</span>
+<span class="at">s2</span>()<span class="op">;</span>
+<span class="at">s2</span>()<span class="op">;</span>
+<span class="at">s2</span>()<span class="op">;</span>
+<span class="at">s2</span>()<span class="op">;</span>
+
+<span class="va">console</span>.<span class="at">log</span>( a<span class="op">,</span> b )<span class="op">;</span>    <span class="co">// 11 22</span></code></pre></div>
+<p>The end result is <code>11</code> and <code>22</code>, just as it was in the Chapter 1 version. Now let’s mix up the interleaving ordering and see how it changes the final values of <code>a</code> and <code>b</code>:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="co">// make sure to reset `a` and `b`</span>
+a <span class="op">=</span> <span class="dv">1</span><span class="op">;</span>
+b <span class="op">=</span> <span class="dv">2</span><span class="op">;</span>
+
+<span class="kw">var</span> s1 <span class="op">=</span> <span class="at">step</span>( foo )<span class="op">;</span>
+<span class="kw">var</span> s2 <span class="op">=</span> <span class="at">step</span>( bar )<span class="op">;</span>
+
+<span class="at">s2</span>()<span class="op">;</span>       <span class="co">// b--;</span>
+<span class="at">s2</span>()<span class="op">;</span>       <span class="co">// yield 8</span>
+<span class="at">s1</span>()<span class="op">;</span>       <span class="co">// a++;</span>
+<span class="at">s2</span>()<span class="op">;</span>       <span class="co">// a = 8 + b;</span>
+            <span class="co">// yield 2</span>
+<span class="at">s1</span>()<span class="op">;</span>       <span class="co">// b = b * a;</span>
+            <span class="co">// yield b</span>
+<span class="at">s1</span>()<span class="op">;</span>       <span class="co">// a = b + 3;</span>
+<span class="at">s2</span>()<span class="op">;</span>       <span class="co">// b = a * 2;</span></code></pre></div>
+<p>Before I tell you the results, can you figure out what <code>a</code> and <code>b</code> are after the preceding program? No cheating!</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="va">console</span>.<span class="at">log</span>( a<span class="op">,</span> b )<span class="op">;</span>    <span class="co">// 12 18</span></code></pre></div>
+<p><strong>Note:</strong> As an exercise for the reader, try to see how many other combinations of results you can get back rearranging the order of the <code>s1()</code> and <code>s2()</code> calls. Don’t forget you’ll always need three <code>s1()</code> calls and four <code>s2()</code> calls. Recall the discussion earlier about matching <code>next()</code> with <code>yield</code> for the reasons why.</p>
+<p>You almost certainly won’t want to intentionally create <em>this</em> level of interleaving confusion, as it creates incredibly difficult to understand code. But the exercise is interesting and instructive to understand more about how multiple generators can run concurrently in the same shared scope, because there will be places where this capability is quite useful.</p>
+<p>We’ll discuss generator concurrency in more detail at the end of this chapter.</p>
+</div>
+</div>
+</div>
+<div id="generatoring-values" class="section level2">
+<h2>Generator’ing Values</h2>
+<p>In the previous section, we mentioned an interesting use for generators, as a way to produce values. This is <strong>not</strong> the main focus in this chapter, but we’d be remiss if we didn’t cover the basics, especially because this use case is essentially the origin of the name: generators.</p>
+<p>We’re going to take a slight diversion into the topic of <em>iterators</em> for a bit, but we’ll circle back to how they relate to generators and using a generator to <em>generate</em> values.</p>
+<div id="producers-and-iterators" class="section level3">
+<h3>Producers and Iterators</h3>
+<p>Imagine you’re producing a series of values where each value has a definable relationship to the previous value. To do this, you’re going to need a stateful producer that remembers the last value it gave out.</p>
+<p>You can implement something like that straightforwardly using a function closure (see the <em>Scope &amp; Closures</em> title of this series):</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="kw">var</span> gimmeSomething <span class="op">=</span> (<span class="kw">function</span>()<span class="op">{</span>
+    <span class="kw">var</span> nextVal<span class="op">;</span>
+
+    <span class="cf">return</span> <span class="kw">function</span>()<span class="op">{</span>
+        <span class="cf">if</span> (nextVal <span class="op">===</span> <span class="kw">undefined</span>) <span class="op">{</span>
+            nextVal <span class="op">=</span> <span class="dv">1</span><span class="op">;</span>
+        <span class="op">}</span>
+        <span class="cf">else</span> <span class="op">{</span>
+            nextVal <span class="op">=</span> (<span class="dv">3</span> <span class="op">*</span> nextVal) <span class="op">+</span> <span class="dv">6</span><span class="op">;</span>
+        <span class="op">}</span>
+
+        <span class="cf">return</span> nextVal<span class="op">;</span>
+    <span class="op">};</span>
+<span class="op">}</span>)()<span class="op">;</span>
+
+<span class="at">gimmeSomething</span>()<span class="op">;</span>       <span class="co">// 1</span>
+<span class="at">gimmeSomething</span>()<span class="op">;</span>       <span class="co">// 9</span>
+<span class="at">gimmeSomething</span>()<span class="op">;</span>       <span class="co">// 33</span>
+<span class="at">gimmeSomething</span>()<span class="op">;</span>       <span class="co">// 105</span></code></pre></div>
+<p><strong>Note:</strong> The <code>nextVal</code> computation logic here could have been simplified, but conceptually, we don’t want to calculate the <em>next value</em> (aka <code>nextVal</code>) until the <em>next</em> <code>gimmeSomething()</code> call happens, because in general that could be a resource-leaky design for producers of more persistent or resource-limited values than simple <code>number</code>s.</p>
+<p>Generating an arbitrary number series isn’t a terribly realistic example. But what if you were generating records from a data source? You could imagine much the same code.</p>
+<p>In fact, this task is a very common design pattern, usually solved by iterators. An <em>iterator</em> is a well-defined interface for stepping through a series of values from a producer. The JS interface for iterators, as it is in most languages, is to call <code>next()</code> each time you want the next value from the producer.</p>
+<p>We could implement the standard <em>iterator</em> interface for our number series producer:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="kw">var</span> something <span class="op">=</span> (<span class="kw">function</span>()<span class="op">{</span>
+    <span class="kw">var</span> nextVal<span class="op">;</span>
+
+    <span class="cf">return</span> <span class="op">{</span>
+        <span class="co">// needed for `for..of` loops</span>
+        [<span class="va">Symbol</span>.<span class="at">iterator</span>]<span class="op">:</span> <span class="kw">function</span>()<span class="op">{</span> <span class="cf">return</span> <span class="kw">this</span><span class="op">;</span> <span class="op">},</span>
+
+        <span class="co">// standard iterator interface method</span>
+        <span class="dt">next</span><span class="op">:</span> <span class="kw">function</span>()<span class="op">{</span>
+            <span class="cf">if</span> (nextVal <span class="op">===</span> <span class="kw">undefined</span>) <span class="op">{</span>
+                nextVal <span class="op">=</span> <span class="dv">1</span><span class="op">;</span>
+            <span class="op">}</span>
+            <span class="cf">else</span> <span class="op">{</span>
+                nextVal <span class="op">=</span> (<span class="dv">3</span> <span class="op">*</span> nextVal) <span class="op">+</span> <span class="dv">6</span><span class="op">;</span>
+            <span class="op">}</span>
+
+            <span class="cf">return</span> <span class="op">{</span> <span class="dt">done</span><span class="op">:</span><span class="kw">false</span><span class="op">,</span> <span class="dt">value</span><span class="op">:</span>nextVal <span class="op">};</span>
+        <span class="op">}</span>
+    <span class="op">};</span>
+<span class="op">}</span>)()<span class="op">;</span>
+
+<span class="va">something</span>.<span class="at">next</span>().<span class="at">value</span><span class="op">;</span>     <span class="co">// 1</span>
+<span class="va">something</span>.<span class="at">next</span>().<span class="at">value</span><span class="op">;</span>     <span class="co">// 9</span>
+<span class="va">something</span>.<span class="at">next</span>().<span class="at">value</span><span class="op">;</span>     <span class="co">// 33</span>
+<span class="va">something</span>.<span class="at">next</span>().<span class="at">value</span><span class="op">;</span>     <span class="co">// 105</span></code></pre></div>
+<p><strong>Note:</strong> We’ll explain why we need the <code>[Symbol.iterator]: ..</code> part of this code snippet in the “Iterables” section. Syntactically though, two ES6 features are at play. First, the <code>[ .. ]</code> syntax is called a <em>computed property name</em> (see the <em>this &amp; Object Prototypes</em> title of this series). It’s a way in an object literal definition to specify an expression and use the result of that expression as the name for the property. Next, <code>Symbol.iterator</code> is one of ES6’s predefined special <code>Symbol</code> values (see the <em>ES6 &amp; Beyond</em> title of this book series).</p>
+<p>The <code>next()</code> call returns an object with two properties: <code>done</code> is a <code>boolean</code> value signaling the <em>iterator’s</em> complete status; <code>value</code> holds the iteration value.</p>
+<p>ES6 also adds the <code>for..of</code> loop, which means that a standard <em>iterator</em> can automatically be consumed with native loop syntax:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="cf">for</span> (<span class="kw">var</span> v of something) <span class="op">{</span>
+    <span class="va">console</span>.<span class="at">log</span>( v )<span class="op">;</span>
+
+    <span class="co">// don&#39;t let the loop run forever!</span>
+    <span class="cf">if</span> (v <span class="op">&gt;</span> <span class="dv">500</span>) <span class="op">{</span>
+        <span class="cf">break</span><span class="op">;</span>
+    <span class="op">}</span>
+<span class="op">}</span>
+<span class="co">// 1 9 33 105 321 969</span></code></pre></div>
+<p><strong>Note:</strong> Because our <code>something</code> <em>iterator</em> always returns <code>done:false</code>, this <code>for..of</code> loop would run forever, which is why we put the <code>break</code> conditional in. It’s totally OK for iterators to be never-ending, but there are also cases where the <em>iterator</em> will run over a finite set of values and eventually return a <code>done:true</code>.</p>
+<p>The <code>for..of</code> loop automatically calls <code>next()</code> for each iteration – it doesn’t pass any values in to the <code>next()</code> – and it will automatically terminate on receiving a <code>done:true</code>. It’s quite handy for looping over a set of data.</p>
+<p>Of course, you could manually loop over iterators, calling <code>next()</code> and checking for the <code>done:true</code> condition to know when to stop:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="cf">for</span> (
+    <span class="kw">var</span> ret<span class="op">;</span>
+    (ret <span class="op">=</span> <span class="va">something</span>.<span class="at">next</span>()) <span class="op">&amp;&amp;</span> <span class="op">!</span><span class="va">ret</span>.<span class="at">done</span><span class="op">;</span>
+) <span class="op">{</span>
+    <span class="va">console</span>.<span class="at">log</span>( <span class="va">ret</span>.<span class="at">value</span> )<span class="op">;</span>
+
+    <span class="co">// don&#39;t let the loop run forever!</span>
+    <span class="cf">if</span> (<span class="va">ret</span>.<span class="at">value</span> <span class="op">&gt;</span> <span class="dv">500</span>) <span class="op">{</span>
+        <span class="cf">break</span><span class="op">;</span>
+    <span class="op">}</span>
+<span class="op">}</span>
+<span class="co">// 1 9 33 105 321 969</span></code></pre></div>
+<p><strong>Note:</strong> This manual <code>for</code> approach is certainly uglier than the ES6 <code>for..of</code> loop syntax, but its advantage is that it affords you the opportunity to pass in values to the <code>next(..)</code> calls if necessary.</p>
+<p>In addition to making your own <em>iterators</em>, many built-in data structures in JS (as of ES6), like <code>array</code>s, also have default <em>iterators</em>:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="kw">var</span> a <span class="op">=</span> [<span class="dv">1</span><span class="op">,</span><span class="dv">3</span><span class="op">,</span><span class="dv">5</span><span class="op">,</span><span class="dv">7</span><span class="op">,</span><span class="dv">9</span>]<span class="op">;</span>
+
+<span class="cf">for</span> (<span class="kw">var</span> v of a) <span class="op">{</span>
+    <span class="va">console</span>.<span class="at">log</span>( v )<span class="op">;</span>
+<span class="op">}</span>
+<span class="co">// 1 3 5 7 9</span></code></pre></div>
+<p>The <code>for..of</code> loop asks <code>a</code> for its <em>iterator</em>, and automatically uses it to iterate over <code>a</code>’s values.</p>
+<p><strong>Note:</strong> It may seem a strange omission by ES6, but regular <code>object</code>s intentionally do not come with a default <em>iterator</em> the way <code>array</code>s do. The reasons go deeper than we will cover here. If all you want is to iterate over the properties of an object (with no particular guarantee of ordering), <code>Object.keys(..)</code> returns an <code>array</code>, which can then be used like <code>for (var k of Object.keys(obj)) { ..</code>. Such a <code>for..of</code> loop over an object’s keys would be similar to a <code>for..in</code> loop, except that <code>Object.keys(..)</code> does not include properties from the <code>[[Prototype]]</code> chain while <code>for..in</code> does (see the <em>this &amp; Object Prototypes</em> title of this series).</p>
+</div>
+<div id="iterables" class="section level3">
+<h3>Iterables</h3>
+<p>The <code>something</code> object in our running example is called an <em>iterator</em>, as it has the <code>next()</code> method on its interface. But a closely related term is <em>iterable</em>, which is an <code>object</code> that <strong>contains</strong> an <em>iterator</em> that can iterate over its values.</p>
+<p>As of ES6, the way to retrieve an <em>iterator</em> from an <em>iterable</em> is that the <em>iterable</em> must have a function on it, with the name being the special ES6 symbol value <code>Symbol.iterator</code>. When this function is called, it returns an <em>iterator</em>. Though not required, generally each call should return a fresh new <em>iterator</em>.</p>
+<p><code>a</code> in the previous snippet is an <em>iterable</em>. The <code>for..of</code> loop automatically calls its <code>Symbol.iterator</code> function to construct an <em>iterator</em>. But we could of course call the function manually, and use the <em>iterator</em> it returns:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="kw">var</span> a <span class="op">=</span> [<span class="dv">1</span><span class="op">,</span><span class="dv">3</span><span class="op">,</span><span class="dv">5</span><span class="op">,</span><span class="dv">7</span><span class="op">,</span><span class="dv">9</span>]<span class="op">;</span>
+
+<span class="kw">var</span> it <span class="op">=</span> a[<span class="va">Symbol</span>.<span class="at">iterator</span>]()<span class="op">;</span>
+
+<span class="va">it</span>.<span class="at">next</span>().<span class="at">value</span><span class="op">;</span>    <span class="co">// 1</span>
+<span class="va">it</span>.<span class="at">next</span>().<span class="at">value</span><span class="op">;</span>    <span class="co">// 3</span>
+<span class="va">it</span>.<span class="at">next</span>().<span class="at">value</span><span class="op">;</span>    <span class="co">// 5</span>
+..</code></pre></div>
+<p>In the previous code listing that defined <code>something</code>, you may have noticed this line:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript">[<span class="va">Symbol</span>.<span class="at">iterator</span>]<span class="op">:</span> <span class="kw">function</span>()<span class="op">{</span> <span class="cf">return</span> <span class="kw">this</span><span class="op">;</span> <span class="op">}</span></code></pre></div>
+<p>That little bit of confusing code is making the <code>something</code> value – the interface of the <code>something</code> <em>iterator</em> – also an <em>iterable</em>; it’s now both an <em>iterable</em> and an <em>iterator</em>. Then, we pass <code>something</code> to the <code>for..of</code> loop:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="cf">for</span> (<span class="kw">var</span> v of something) <span class="op">{</span>
+    ..
+<span class="op">}</span></code></pre></div>
+<p>The <code>for..of</code> loop expects <code>something</code> to be an <em>iterable</em>, so it looks for and calls its <code>Symbol.iterator</code> function. We defined that function to simply <code>return this</code>, so it just gives itself back, and the <code>for..of</code> loop is none the wiser.</p>
+</div>
+<div id="generator-iterator" class="section level3">
+<h3>Generator Iterator</h3>
+<p>Let’s turn our attention back to generators, in the context of <em>iterators</em>. A generator can be treated as a producer of values that we extract one at a time through an <em>iterator</em> interface’s <code>next()</code> calls.</p>
+<p>So, a generator itself is not technically an <em>iterable</em>, though it’s very similar – when you execute the generator, you get an <em>iterator</em> back:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="kw">function</span> <span class="op">*</span><span class="at">foo</span>()<span class="op">{</span> .. <span class="op">}</span>
+
+<span class="kw">var</span> it <span class="op">=</span> <span class="at">foo</span>()<span class="op">;</span></code></pre></div>
+<p>We can implement the <code>something</code> infinite number series producer from earlier with a generator, like this:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="kw">function</span> <span class="op">*</span><span class="at">something</span>() <span class="op">{</span>
+    <span class="kw">var</span> nextVal<span class="op">;</span>
+
+    <span class="cf">while</span> (<span class="kw">true</span>) <span class="op">{</span>
+        <span class="cf">if</span> (nextVal <span class="op">===</span> <span class="kw">undefined</span>) <span class="op">{</span>
+            nextVal <span class="op">=</span> <span class="dv">1</span><span class="op">;</span>
+        <span class="op">}</span>
+        <span class="cf">else</span> <span class="op">{</span>
+            nextVal <span class="op">=</span> (<span class="dv">3</span> <span class="op">*</span> nextVal) <span class="op">+</span> <span class="dv">6</span><span class="op">;</span>
+        <span class="op">}</span>
+
+        <span class="kw">yield</span> nextVal<span class="op">;</span>
+    <span class="op">}</span>
+<span class="op">}</span></code></pre></div>
+<p><strong>Note:</strong> A <code>while..true</code> loop would normally be a very bad thing to include in a real JS program, at least if it doesn’t have a <code>break</code> or <code>return</code> in it, as it would likely run forever, synchronously, and block/lock-up the browser UI. However, in a generator, such a loop is generally totally OK if it has a <code>yield</code> in it, as the generator will pause at each iteration, <code>yield</code>ing back to the main program and/or to the event loop queue. To put it glibly, “generators put the <code>while..true</code> back in JS programming!”</p>
+<p>That’s a fair bit cleaner and simpler, right? Because the generator pauses at each <code>yield</code>, the state (scope) of the function <code>*something()</code> is kept around, meaning there’s no need for the closure boilerplate to preserve variable state across calls.</p>
+<p>Not only is it simpler code – we don’t have to make our own <em>iterator</em> interface – it actually is more reason-able code, because it more clearly expresses the intent. For example, the <code>while..true</code> loop tells us the generator is intended to run forever – to keep <em>generating</em> values as long as we keep asking for them.</p>
+<p>And now we can use our shiny new <code>*something()</code> generator with a <code>for..of</code> loop, and you’ll see it works basically identically:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="cf">for</span> (<span class="kw">var</span> v of <span class="at">something</span>()) <span class="op">{</span>
+    <span class="va">console</span>.<span class="at">log</span>( v )<span class="op">;</span>
+
+    <span class="co">// don&#39;t let the loop run forever!</span>
+    <span class="cf">if</span> (v <span class="op">&gt;</span> <span class="dv">500</span>) <span class="op">{</span>
+        <span class="cf">break</span><span class="op">;</span>
+    <span class="op">}</span>
+<span class="op">}</span>
+<span class="co">// 1 9 33 105 321 969</span></code></pre></div>
+<p>But don’t skip over <code>for (var v of something()) ..</code>! We didn’t just reference <code>something</code> as a value like in earlier examples, but instead called the <code>*something()</code> generator to get its <em>iterator</em> for the <code>for..of</code> loop to use.</p>
+<p>If you’re paying close attention, two questions may arise from this interaction between the generator and the loop:</p>
+<ul>
+<li>Why couldn’t we say <code>for (var v of something) ..</code>? Because <code>something</code> here is a generator, which is not an <em>iterable</em>. We have to call <code>something()</code> to construct a producer for the <code>for..of</code> loop to iterate over.</li>
+<li>The <code>something()</code> call produces an <em>iterator</em>, but the <code>for..of</code> loop wants an <em>iterable</em>, right? Yep. The generator’s <em>iterator</em> also has a <code>Symbol.iterator</code> function on it, which basically does a <code>return this</code>, just like the <code>something</code> <em>iterable</em> we defined earlier. In other words, a generator’s <em>iterator</em> is also an <em>iterable</em>!</li>
+</ul>
+<div id="stopping-the-generator" class="section level4">
+<h4>Stopping the Generator</h4>
+<p>In the previous example, it would appear the <em>iterator</em> instance for the <code>*something()</code> generator was basically left in a suspended state forever after the <code>break</code> in the loop was called.</p>
+<p>But there’s a hidden behavior that takes care of that for you. “Abnormal completion” (i.e., “early termination”) of the <code>for..of</code> loop – generally caused by a <code>break</code>, <code>return</code>, or an uncaught exception – sends a signal to the generator’s <em>iterator</em> for it to terminate.</p>
+<p><strong>Note:</strong> Technically, the <code>for..of</code> loop also sends this signal to the <em>iterator</em> at the normal completion of the loop. For a generator, that’s essentially a moot operation, as the generator’s <em>iterator</em> had to complete first so the <code>for..of</code> loop completed. However, custom <em>iterators</em> might desire to receive this additional signal from <code>for..of</code> loop consumers.</p>
+<p>While a <code>for..of</code> loop will automatically send this signal, you may wish to send the signal manually to an <em>iterator</em>; you do this by calling <code>return(..)</code>.</p>
+<p>If you specify a <code>try..finally</code> clause inside the generator, it will always be run even when the generator is externally completed. This is useful if you need to clean up resources (database connections, etc.):</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="kw">function</span> <span class="op">*</span><span class="at">something</span>() <span class="op">{</span>
+    <span class="cf">try</span> <span class="op">{</span>
+        <span class="kw">var</span> nextVal<span class="op">;</span>
+
+        <span class="cf">while</span> (<span class="kw">true</span>) <span class="op">{</span>
+            <span class="cf">if</span> (nextVal <span class="op">===</span> <span class="kw">undefined</span>) <span class="op">{</span>
+                nextVal <span class="op">=</span> <span class="dv">1</span><span class="op">;</span>
+            <span class="op">}</span>
+            <span class="cf">else</span> <span class="op">{</span>
+                nextVal <span class="op">=</span> (<span class="dv">3</span> <span class="op">*</span> nextVal) <span class="op">+</span> <span class="dv">6</span><span class="op">;</span>
+            <span class="op">}</span>
+
+            <span class="kw">yield</span> nextVal<span class="op">;</span>
+        <span class="op">}</span>
+    <span class="op">}</span>
+    <span class="co">// cleanup clause</span>
+    <span class="cf">finally</span> <span class="op">{</span>
+        <span class="va">console</span>.<span class="at">log</span>( <span class="st">&quot;cleaning up!&quot;</span> )<span class="op">;</span>
+    <span class="op">}</span>
+<span class="op">}</span></code></pre></div>
+<p>The earlier example with <code>break</code> in the <code>for..of</code> loop will trigger the <code>finally</code> clause. But you could instead manually terminate the generator’s <em>iterator</em> instance from the outside with <code>return(..)</code>:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="kw">var</span> it <span class="op">=</span> <span class="at">something</span>()<span class="op">;</span>
+<span class="cf">for</span> (<span class="kw">var</span> v of it) <span class="op">{</span>
+    <span class="va">console</span>.<span class="at">log</span>( v )<span class="op">;</span>
+
+    <span class="co">// don&#39;t let the loop run forever!</span>
+    <span class="cf">if</span> (v <span class="op">&gt;</span> <span class="dv">500</span>) <span class="op">{</span>
+        <span class="va">console</span>.<span class="at">log</span>(
+            <span class="co">// complete the generator&#39;s iterator</span>
+            <span class="va">it</span>.<span class="at">return</span>( <span class="st">&quot;Hello World&quot;</span> ).<span class="at">value</span>
+        )<span class="op">;</span>
+        <span class="co">// no `break` needed here</span>
+    <span class="op">}</span>
+<span class="op">}</span>
+<span class="co">// 1 9 33 105 321 969</span>
+<span class="co">// cleaning up!</span>
+<span class="co">// Hello World</span></code></pre></div>
+<p>When we call <code>it.return(..)</code>, it immediately terminates the generator, which of course runs the <code>finally</code> clause. Also, it sets the returned <code>value</code> to whatever you passed in to <code>return(..)</code>, which is how <code>&quot;Hello World&quot;</code> comes right back out. We also don’t need to include a <code>break</code> now because the generator’s <em>iterator</em> is set to <code>done:true</code>, so the <code>for..of</code> loop will terminate on its next iteration.</p>
+<p>Generators owe their namesake mostly to this <em>consuming produced values</em> use. But again, that’s just one of the uses for generators, and frankly not even the main one we’re concerned with in the context of this book.</p>
+<p>But now that we more fully understand some of the mechanics of how they work, we can <em>next</em> turn our attention to how generators apply to async concurrency.</p>
+</div>
+</div>
+</div>
+<div id="iterating-generators-asynchronously" class="section level2">
+<h2>Iterating Generators Asynchronously</h2>
+<p>What do generators have to do with async coding patterns, fixing problems with callbacks, and the like? Let’s get to answering that important question.</p>
+<p>We should revisit one of our scenarios from Chapter 3. Let’s recall the callback approach:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="kw">function</span> <span class="at">foo</span>(x<span class="op">,</span>y<span class="op">,</span>cb) <span class="op">{</span>
+    <span class="at">ajax</span>(
+        <span class="st">&quot;http://some.url.1/?x=&quot;</span> <span class="op">+</span> x <span class="op">+</span> <span class="st">&quot;&amp;y=&quot;</span> <span class="op">+</span> y<span class="op">,</span>
+        cb
+    )<span class="op">;</span>
+<span class="op">}</span>
+
+<span class="at">foo</span>( <span class="dv">11</span><span class="op">,</span> <span class="dv">31</span><span class="op">,</span> <span class="kw">function</span>(err<span class="op">,</span>text) <span class="op">{</span>
+    <span class="cf">if</span> (err) <span class="op">{</span>
+        <span class="va">console</span>.<span class="at">error</span>( err )<span class="op">;</span>
+    <span class="op">}</span>
+    <span class="cf">else</span> <span class="op">{</span>
+        <span class="va">console</span>.<span class="at">log</span>( text )<span class="op">;</span>
+    <span class="op">}</span>
+<span class="op">}</span> )<span class="op">;</span></code></pre></div>
+<p>If we wanted to express this same task flow control with a generator, we could do:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="kw">function</span> <span class="at">foo</span>(x<span class="op">,</span>y) <span class="op">{</span>
+    <span class="at">ajax</span>(
+        <span class="st">&quot;http://some.url.1/?x=&quot;</span> <span class="op">+</span> x <span class="op">+</span> <span class="st">&quot;&amp;y=&quot;</span> <span class="op">+</span> y<span class="op">,</span>
+        <span class="kw">function</span>(err<span class="op">,</span>data)<span class="op">{</span>
+            <span class="cf">if</span> (err) <span class="op">{</span>
+                <span class="co">// throw an error into `*main()`</span>
+                <span class="va">it</span>.<span class="at">throw</span>( err )<span class="op">;</span>
+            <span class="op">}</span>
+            <span class="cf">else</span> <span class="op">{</span>
+                <span class="co">// resume `*main()` with received `data`</span>
+                <span class="va">it</span>.<span class="at">next</span>( data )<span class="op">;</span>
+            <span class="op">}</span>
+        <span class="op">}</span>
+    )<span class="op">;</span>
+<span class="op">}</span>
+
+<span class="kw">function</span> <span class="op">*</span><span class="at">main</span>() <span class="op">{</span>
+    <span class="cf">try</span> <span class="op">{</span>
+        <span class="kw">var</span> text <span class="op">=</span> <span class="kw">yield</span> <span class="at">foo</span>( <span class="dv">11</span><span class="op">,</span> <span class="dv">31</span> )<span class="op">;</span>
+        <span class="va">console</span>.<span class="at">log</span>( text )<span class="op">;</span>
+    <span class="op">}</span>
+    <span class="cf">catch</span> (err) <span class="op">{</span>
+        <span class="va">console</span>.<span class="at">error</span>( err )<span class="op">;</span>
+    <span class="op">}</span>
+<span class="op">}</span>
+
+<span class="kw">var</span> it <span class="op">=</span> <span class="at">main</span>()<span class="op">;</span>
+
+<span class="co">// start it all up!</span>
+<span class="va">it</span>.<span class="at">next</span>()<span class="op">;</span></code></pre></div>
+<p>At first glance, this snippet is longer, and perhaps a little more complex looking, than the callback snippet before it. But don’t let that impression get you off track. The generator snippet is actually <strong>much</strong> better! But there’s a lot going on for us to explain.</p>
+<p>First, let’s look at this part of the code, which is the most important:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="kw">var</span> text <span class="op">=</span> <span class="kw">yield</span> <span class="at">foo</span>( <span class="dv">11</span><span class="op">,</span> <span class="dv">31</span> )<span class="op">;</span>
+<span class="va">console</span>.<span class="at">log</span>( text )<span class="op">;</span></code></pre></div>
+<p>Think about how that code works for a moment. We’re calling a normal function <code>foo(..)</code> and we’re apparently able to get back the <code>text</code> from the Ajax call, even though it’s asynchronous.</p>
+<p>How is that possible? If you recall the beginning of Chapter 1, we had almost identical code:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="kw">var</span> data <span class="op">=</span> <span class="at">ajax</span>( <span class="st">&quot;..url 1..&quot;</span> )<span class="op">;</span>
+<span class="va">console</span>.<span class="at">log</span>( data )<span class="op">;</span></code></pre></div>
+<p>And that code didn’t work! Can you spot the difference? It’s the <code>yield</code> used in a generator.</p>
+<p>That’s the magic! That’s what allows us to have what appears to be blocking, synchronous code, but it doesn’t actually block the whole program; it only pauses/blocks the code in the generator itself.</p>
+<p>In <code>yield foo(11,31)</code>, first the <code>foo(11,31)</code> call is made, which returns nothing (aka <code>undefined</code>), so we’re making a call to request data, but we’re actually then doing <code>yield undefined</code>. That’s OK, because the code is not currently relying on a <code>yield</code>ed value to do anything interesting. We’ll revisit this point later in the chapter.</p>
+<p>We’re not using <code>yield</code> in a message passing sense here, only in a flow control sense to pause/block. Actually, it will have message passing, but only in one direction, after the generator is resumed.</p>
+<p>So, the generator pauses at the <code>yield</code>, essentially asking the question, “what value should I return to assign to the variable <code>text</code>?” Who’s going to answer that question?</p>
+<p>Look at <code>foo(..)</code>. If the Ajax request is successful, we call:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="va">it</span>.<span class="at">next</span>( data )<span class="op">;</span></code></pre></div>
+<p>That’s resuming the generator with the response data, which means that our paused <code>yield</code> expression receives that value directly, and then as it restarts the generator code, that value gets assigned to the local variable <code>text</code>.</p>
+<p>Pretty cool, huh?</p>
+<p>Take a step back and consider the implications. We have totally synchronous-looking code inside the generator (other than the <code>yield</code> keyword itself), but hidden behind the scenes, inside of <code>foo(..)</code>, the operations can complete asynchronously.</p>
+<p><strong>That’s huge!</strong> That’s a nearly perfect solution to our previously stated problem with callbacks not being able to express asynchrony in a sequential, synchronous fashion that our brains can relate to.</p>
+<p>In essence, we are abstracting the asynchrony away as an implementation detail, so that we can reason synchronously/sequentially about our flow control: “Make an Ajax request, and when it finishes print out the response.” And of course, we just expressed two steps in the flow control, but this same capability extends without bounds, to let us express however many steps we need to.</p>
+<p><strong>Tip:</strong> This is such an important realization, just go back and read the last three paragraphs again to let it sink in!</p>
+<div id="synchronous-error-handling" class="section level3">
+<h3>Synchronous Error Handling</h3>
+<p>But the preceding generator code has even more goodness to <em>yield</em> to us. Let’s turn our attention to the <code>try..catch</code> inside the generator:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="cf">try</span> <span class="op">{</span>
+    <span class="kw">var</span> text <span class="op">=</span> <span class="kw">yield</span> <span class="at">foo</span>( <span class="dv">11</span><span class="op">,</span> <span class="dv">31</span> )<span class="op">;</span>
+    <span class="va">console</span>.<span class="at">log</span>( text )<span class="op">;</span>
+<span class="op">}</span>
+<span class="cf">catch</span> (err) <span class="op">{</span>
+    <span class="va">console</span>.<span class="at">error</span>( err )<span class="op">;</span>
+<span class="op">}</span></code></pre></div>
+<p>How does this work? The <code>foo(..)</code> call is asynchronously completing, and doesn’t <code>try..catch</code> fail to catch asynchronous errors, as we looked at in Chapter 3?</p>
+<p>We already saw how the <code>yield</code> lets the assignment statement pause to wait for <code>foo(..)</code> to finish, so that the completed response can be assigned to <code>text</code>. The awesome part is that this <code>yield</code> pausing <em>also</em> allows the generator to <code>catch</code> an error. We throw that error into the generator with this part of the earlier code listing:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="cf">if</span> (err) <span class="op">{</span>
+    <span class="co">// throw an error into `*main()`</span>
+    <span class="va">it</span>.<span class="at">throw</span>( err )<span class="op">;</span>
+<span class="op">}</span></code></pre></div>
+<p>The <code>yield</code>-pause nature of generators means that not only do we get synchronous-looking <code>return</code> values from async function calls, but we can also synchronously <code>catch</code> errors from those async function calls!</p>
+<p>So we’ve seen we can throw errors <em>into</em> a generator, but what about throwing errors <em>out of</em> a generator? Exactly as you’d expect:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="kw">function</span> <span class="op">*</span><span class="at">main</span>() <span class="op">{</span>
+    <span class="kw">var</span> x <span class="op">=</span> <span class="kw">yield</span> <span class="st">&quot;Hello World&quot;</span><span class="op">;</span>
+
+    <span class="kw">yield</span> <span class="va">x</span>.<span class="at">toLowerCase</span>()<span class="op">;</span>  <span class="co">// cause an exception!</span>
+<span class="op">}</span>
+
+<span class="kw">var</span> it <span class="op">=</span> <span class="at">main</span>()<span class="op">;</span>
+
+<span class="va">it</span>.<span class="at">next</span>().<span class="at">value</span><span class="op">;</span>            <span class="co">// Hello World</span>
+
+<span class="cf">try</span> <span class="op">{</span>
+    <span class="va">it</span>.<span class="at">next</span>( <span class="dv">42</span> )<span class="op">;</span>
+<span class="op">}</span>
+<span class="cf">catch</span> (err) <span class="op">{</span>
+    <span class="va">console</span>.<span class="at">error</span>( err )<span class="op">;</span>   <span class="co">// TypeError</span>
+<span class="op">}</span></code></pre></div>
+<p>Of course, we could have manually thrown an error with <code>throw ..</code> instead of causing an exception.</p>
+<p>We can even <code>catch</code> the same error that we <code>throw(..)</code> into the generator, essentially giving the generator a chance to handle it but if it doesn’t, the <em>iterator</em> code must handle it:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="kw">function</span> <span class="op">*</span><span class="at">main</span>() <span class="op">{</span>
+    <span class="kw">var</span> x <span class="op">=</span> <span class="kw">yield</span> <span class="st">&quot;Hello World&quot;</span><span class="op">;</span>
+
+    <span class="co">// never gets here</span>
+    <span class="va">console</span>.<span class="at">log</span>( x )<span class="op">;</span>
+<span class="op">}</span>
+
+<span class="kw">var</span> it <span class="op">=</span> <span class="at">main</span>()<span class="op">;</span>
+
+<span class="va">it</span>.<span class="at">next</span>()<span class="op">;</span>
+
+<span class="cf">try</span> <span class="op">{</span>
+    <span class="co">// will `*main()` handle this error? we&#39;ll see!</span>
+    <span class="va">it</span>.<span class="at">throw</span>( <span class="st">&quot;Oops&quot;</span> )<span class="op">;</span>
+<span class="op">}</span>
+<span class="cf">catch</span> (err) <span class="op">{</span>
+    <span class="co">// nope, didn&#39;t handle it!</span>
+    <span class="va">console</span>.<span class="at">error</span>( err )<span class="op">;</span>           <span class="co">// Oops</span>
+<span class="op">}</span></code></pre></div>
+<p>Synchronous-looking error handling (via <code>try..catch</code>) with async code is a huge win for readability and reason-ability.</p>
+</div>
+</div>
+<div id="generators-promises" class="section level2">
+<h2>Generators + Promises</h2>
+<p>In our previous discussion, we showed how generators can be iterated asynchronously, which is a huge step forward in sequential reason-ability over the spaghetti mess of callbacks. But we lost something very important: the trustability and composability of Promises (see Chapter 3)!</p>
+<p>Don’t worry – we can get that back. The best of all worlds in ES6 is to combine generators (synchronous-looking async code) with Promises (trustable and composable).</p>
+<p>But how?</p>
+<p>Recall from Chapter 3 the Promise-based approach to our running Ajax example:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="kw">function</span> <span class="at">foo</span>(x<span class="op">,</span>y) <span class="op">{</span>
+    <span class="cf">return</span> <span class="at">request</span>(
+        <span class="st">&quot;http://some.url.1/?x=&quot;</span> <span class="op">+</span> x <span class="op">+</span> <span class="st">&quot;&amp;y=&quot;</span> <span class="op">+</span> y
+    )<span class="op">;</span>
+<span class="op">}</span>
+
+<span class="at">foo</span>( <span class="dv">11</span><span class="op">,</span> <span class="dv">31</span> )
+.<span class="at">then</span>(
+    <span class="kw">function</span>(text)<span class="op">{</span>
+        <span class="va">console</span>.<span class="at">log</span>( text )<span class="op">;</span>
+    <span class="op">},</span>
+    <span class="kw">function</span>(err)<span class="op">{</span>
+        <span class="va">console</span>.<span class="at">error</span>( err )<span class="op">;</span>
+    <span class="op">}</span>
+)<span class="op">;</span></code></pre></div>
+<p>In our earlier generator code for the running Ajax example, <code>foo(..)</code> returned nothing (<code>undefined</code>), and our <em>iterator</em> control code didn’t care about that <code>yield</code>ed value.</p>
+<p>But here the Promise-aware <code>foo(..)</code> returns a promise after making the Ajax call. That suggests that we could construct a promise with <code>foo(..)</code> and then <code>yield</code> it from the generator, and then the <em>iterator</em> control code would receive that promise.</p>
+<p>But what should the <em>iterator</em> do with the promise?</p>
+<p>It should listen for the promise to resolve (fulfillment or rejection), and then either resume the generator with the fulfillment message or throw an error into the generator with the rejection reason.</p>
+<p>Let me repeat that, because it’s so important. The natural way to get the most out of Promises and generators is <strong>to <code>yield</code> a Promise</strong>, and wire that Promise to control the generator’s <em>iterator</em>.</p>
+<p>Let’s give it a try! First, we’ll put the Promise-aware <code>foo(..)</code> together with the generator <code>*main()</code>:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="kw">function</span> <span class="at">foo</span>(x<span class="op">,</span>y) <span class="op">{</span>
+    <span class="cf">return</span> <span class="at">request</span>(
+        <span class="st">&quot;http://some.url.1/?x=&quot;</span> <span class="op">+</span> x <span class="op">+</span> <span class="st">&quot;&amp;y=&quot;</span> <span class="op">+</span> y
+    )<span class="op">;</span>
+<span class="op">}</span>
+
+<span class="kw">function</span> <span class="op">*</span><span class="at">main</span>() <span class="op">{</span>
+    <span class="cf">try</span> <span class="op">{</span>
+        <span class="kw">var</span> text <span class="op">=</span> <span class="kw">yield</span> <span class="at">foo</span>( <span class="dv">11</span><span class="op">,</span> <span class="dv">31</span> )<span class="op">;</span>
+        <span class="va">console</span>.<span class="at">log</span>( text )<span class="op">;</span>
+    <span class="op">}</span>
+    <span class="cf">catch</span> (err) <span class="op">{</span>
+        <span class="va">console</span>.<span class="at">error</span>( err )<span class="op">;</span>
+    <span class="op">}</span>
+<span class="op">}</span></code></pre></div>
+<p>The most powerful revelation in this refactor is that the code inside <code>*main()</code> <strong>did not have to change at all!</strong> Inside the generator, whatever values are <code>yield</code>ed out is just an opaque implementation detail, so we’re not even aware it’s happening, nor do we need to worry about it.</p>
+<p>But how are we going to run <code>*main()</code> now? We still have some of the implementation plumbing work to do, to receive and wire up the <code>yield</code>ed promise so that it resumes the generator upon resolution. We’ll start by trying that manually:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="kw">var</span> it <span class="op">=</span> <span class="at">main</span>()<span class="op">;</span>
+
+<span class="kw">var</span> p <span class="op">=</span> <span class="va">it</span>.<span class="at">next</span>().<span class="at">value</span><span class="op">;</span>
+
+<span class="co">// wait for the `p` promise to resolve</span>
+<span class="va">p</span>.<span class="at">then</span>(
+    <span class="kw">function</span>(text)<span class="op">{</span>
+        <span class="va">it</span>.<span class="at">next</span>( text )<span class="op">;</span>
+    <span class="op">},</span>
+    <span class="kw">function</span>(err)<span class="op">{</span>
+        <span class="va">it</span>.<span class="at">throw</span>( err )<span class="op">;</span>
+    <span class="op">}</span>
+)<span class="op">;</span></code></pre></div>
+<p>Actually, that wasn’t so painful at all, was it?</p>
+<p>This snippet should look very similar to what we did earlier with the manually wired generator controlled by the error-first callback. Instead of an <code>if (err) { it.throw..</code>, the promise already splits fulfillment (success) and rejection (failure) for us, but otherwise the <em>iterator</em> control is identical.</p>
+<p>Now, we’ve glossed over some important details.</p>
+<p>Most importantly, we took advantage of the fact that we knew that <code>*main()</code> only had one Promise-aware step in it. What if we wanted to be able to Promise-drive a generator no matter how many steps it has? We certainly don’t want to manually write out the Promise chain differently for each generator! What would be much nicer is if there was a way to repeat (aka “loop” over) the iteration control, and each time a Promise comes out, wait on its resolution before continuing.</p>
+<p>Also, what if the generator throws out an error (intentionally or accidentally) during the <code>it.next(..)</code> call? Should we quit, or should we <code>catch</code> it and send it right back in? Similarly, what if we <code>it.throw(..)</code> a Promise rejection into the generator, but it’s not handled, and comes right back out?</p>
+<div id="promise-aware-generator-runner" class="section level3">
+<h3>Promise-Aware Generator Runner</h3>
+<p>The more you start to explore this path, the more you realize, “wow, it’d be great if there was just some utility to do it for me.” And you’re absolutely correct. This is such an important pattern, and you don’t want to get it wrong (or exhaust yourself repeating it over and over), so your best bet is to use a utility that is specifically designed to <em>run</em> Promise-<code>yield</code>ing generators in the manner we’ve illustrated.</p>
+<p>Several Promise abstraction libraries provide just such a utility, including my <em>asynquence</em> library and its <code>runner(..)</code>, which will be discussed in Appendix A of this book.</p>
+<p>But for the sake of learning and illustration, let’s just define our own standalone utility that we’ll call <code>run(..)</code>:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="co">// thanks to Benjamin Gruenbaum (@benjamingr on GitHub) for</span>
+<span class="co">// big improvements here!</span>
+<span class="kw">function</span> <span class="at">run</span>(gen) <span class="op">{</span>
+    <span class="kw">var</span> args <span class="op">=</span> [].<span class="va">slice</span>.<span class="at">call</span>( arguments<span class="op">,</span> <span class="dv">1</span>)<span class="op">,</span> it<span class="op">;</span>
+
+    <span class="co">// initialize the generator in the current context</span>
+    it <span class="op">=</span> <span class="va">gen</span>.<span class="at">apply</span>( <span class="kw">this</span><span class="op">,</span> args )<span class="op">;</span>
+
+    <span class="co">// return a promise for the generator completing</span>
+    <span class="cf">return</span> <span class="va">Promise</span>.<span class="at">resolve</span>()
+        .<span class="at">then</span>( <span class="kw">function</span> <span class="at">handleNext</span>(value)<span class="op">{</span>
+            <span class="co">// run to the next yielded value</span>
+            <span class="kw">var</span> next <span class="op">=</span> <span class="va">it</span>.<span class="at">next</span>( value )<span class="op">;</span>
+
+            <span class="cf">return</span> (<span class="kw">function</span> <span class="at">handleResult</span>(next)<span class="op">{</span>
+                <span class="co">// generator has completed running?</span>
+                <span class="cf">if</span> (<span class="va">next</span>.<span class="at">done</span>) <span class="op">{</span>
+                    <span class="cf">return</span> <span class="va">next</span>.<span class="at">value</span><span class="op">;</span>
+                <span class="op">}</span>
+                <span class="co">// otherwise keep going</span>
+                <span class="cf">else</span> <span class="op">{</span>
+                    <span class="cf">return</span> <span class="va">Promise</span>.<span class="at">resolve</span>( <span class="va">next</span>.<span class="at">value</span> )
+                        .<span class="at">then</span>(
+                            <span class="co">// resume the async loop on</span>
+                            <span class="co">// success, sending the resolved</span>
+                            <span class="co">// value back into the generator</span>
+                            handleNext<span class="op">,</span>
+
+                            <span class="co">// if `value` is a rejected</span>
+                            <span class="co">// promise, propagate error back</span>
+                            <span class="co">// into the generator for its own</span>
+                            <span class="co">// error handling</span>
+                            <span class="kw">function</span> <span class="at">handleErr</span>(err) <span class="op">{</span>
+                                <span class="cf">return</span> <span class="va">Promise</span>.<span class="at">resolve</span>(
+                                    <span class="va">it</span>.<span class="at">throw</span>( err )
+                                )
+                                .<span class="at">then</span>( handleResult )<span class="op">;</span>
+                            <span class="op">}</span>
+                        )<span class="op">;</span>
+                <span class="op">}</span>
+            <span class="op">}</span>)(next)<span class="op">;</span>
+        <span class="op">}</span> )<span class="op">;</span>
+<span class="op">}</span></code></pre></div>
+<p>As you can see, it’s a quite a bit more complex than you’d probably want to author yourself, and you especially wouldn’t want to repeat this code for each generator you use. So, a utility/library helper is definitely the way to go. Nevertheless, I encourage you to spend a few minutes studying that code listing to get a better sense of how to manage the generator+Promise negotiation.</p>
+<p>How would you use <code>run(..)</code> with <code>*main()</code> in our <em>running</em> Ajax example?</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="kw">function</span> <span class="op">*</span><span class="at">main</span>() <span class="op">{</span>
+    <span class="co">// ..</span>
+<span class="op">}</span>
+
+<span class="at">run</span>( main )<span class="op">;</span></code></pre></div>
+<p>That’s it! The way we wired <code>run(..)</code>, it will automatically advance the generator you pass to it, asynchronously until completion.</p>
+<p><strong>Note:</strong> The <code>run(..)</code> we defined returns a promise which is wired to resolve once the generator is complete, or receive an uncaught exception if the generator doesn’t handle it. We don’t show that capability here, but we’ll come back to it later in the chapter.</p>
+<div id="es7-async-and-await" class="section level4">
+<h4>ES7: <code>async</code> and <code>await</code>?</h4>
+<p>The preceding pattern – generators yielding Promises that then control the generator’s <em>iterator</em> to advance it to completion – is such a powerful and useful approach, it would be nicer if we could do it without the clutter of the library utility helper (aka <code>run(..)</code>).</p>
+<p>There’s probably good news on that front. At the time of this writing, there’s early but strong support for a proposal for more syntactic addition in this realm for the post-ES6, ES7-ish timeframe. Obviously, it’s too early to guarantee the details, but there’s a pretty decent chance it will shake out similar to the following:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="kw">function</span> <span class="at">foo</span>(x<span class="op">,</span>y) <span class="op">{</span>
+    <span class="cf">return</span> <span class="at">request</span>(
+        <span class="st">&quot;http://some.url.1/?x=&quot;</span> <span class="op">+</span> x <span class="op">+</span> <span class="st">&quot;&amp;y=&quot;</span> <span class="op">+</span> y
+    )<span class="op">;</span>
+<span class="op">}</span>
+
+async <span class="kw">function</span> <span class="at">main</span>() <span class="op">{</span>
+    <span class="cf">try</span> <span class="op">{</span>
+        <span class="kw">var</span> text <span class="op">=</span> await <span class="at">foo</span>( <span class="dv">11</span><span class="op">,</span> <span class="dv">31</span> )<span class="op">;</span>
+        <span class="va">console</span>.<span class="at">log</span>( text )<span class="op">;</span>
+    <span class="op">}</span>
+    <span class="cf">catch</span> (err) <span class="op">{</span>
+        <span class="va">console</span>.<span class="at">error</span>( err )<span class="op">;</span>
+    <span class="op">}</span>
+<span class="op">}</span>
+
+<span class="at">main</span>()<span class="op">;</span></code></pre></div>
+<p>As you can see, there’s no <code>run(..)</code> call (meaning no need for a library utility!) to invoke and drive <code>main()</code> – it’s just called as a normal function. Also, <code>main()</code> isn’t declared as a generator function anymore; it’s a new kind of function: <code>async function</code>. And finally, instead of <code>yield</code>ing a Promise, we <code>await</code> for it to resolve.</p>
+<p>The <code>async function</code> automatically knows what to do if you <code>await</code> a Promise – it will pause the function (just like with generators) until the Promise resolves. We didn’t illustrate it in this snippet, but calling an async function like <code>main()</code> automatically returns a promise that’s resolved whenever the function finishes completely.</p>
+<p><strong>Tip:</strong> The <code>async</code> / <code>await</code> syntax should look very familiar to readers with experience in C#, because it’s basically identical.</p>
+<p>The proposal essentially codifies support for the pattern we’ve already derived, into a syntactic mechanism: combining Promises with sync-looking flow control code. That’s the best of both worlds combined, to effectively address practically all of the major concerns we outlined with callbacks.</p>
+<p>The mere fact that such a ES7-ish proposal already exists and has early support and enthusiasm is a major vote of confidence in the future importance of this async pattern.</p>
+</div>
+</div>
+<div id="promise-concurrency-in-generators" class="section level3">
+<h3>Promise Concurrency in Generators</h3>
+<p>So far, all we’ve demonstrated is a single-step async flow with Promises+generators. But real-world code will often have many async steps.</p>
+<p>If you’re not careful, the sync-looking style of generators may lull you into complacency with how you structure your async concurrency, leading to suboptimal performance patterns. So we want to spend a little time exploring the options.</p>
+<p>Imagine a scenario where you need to fetch data from two different sources, then combine those responses to make a third request, and finally print out the last response. We explored a similar scenario with Promises in Chapter 3, but let’s reconsider it in the context of generators.</p>
+<p>Your first instinct might be something like:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="kw">function</span> <span class="op">*</span><span class="at">foo</span>() <span class="op">{</span>
+    <span class="kw">var</span> r1 <span class="op">=</span> <span class="kw">yield</span> <span class="at">request</span>( <span class="st">&quot;http://some.url.1&quot;</span> )<span class="op">;</span>
+    <span class="kw">var</span> r2 <span class="op">=</span> <span class="kw">yield</span> <span class="at">request</span>( <span class="st">&quot;http://some.url.2&quot;</span> )<span class="op">;</span>
+
+    <span class="kw">var</span> r3 <span class="op">=</span> <span class="kw">yield</span> <span class="at">request</span>(
+        <span class="st">&quot;http://some.url.3/?v=&quot;</span> <span class="op">+</span> r1 <span class="op">+</span> <span class="st">&quot;,&quot;</span> <span class="op">+</span> r2
+    )<span class="op">;</span>
+
+    <span class="va">console</span>.<span class="at">log</span>( r3 )<span class="op">;</span>
+<span class="op">}</span>
+
+<span class="co">// use previously defined `run(..)` utility</span>
+<span class="at">run</span>( foo )<span class="op">;</span></code></pre></div>
+<p>This code will work, but in the specifics of our scenario, it’s not optimal. Can you spot why?</p>
+<p>Because the <code>r1</code> and <code>r2</code> requests can – and for performance reasons, <em>should</em> – run concurrently, but in this code they will run sequentially; the <code>&quot;http://some.url.2&quot;</code> URL isn’t Ajax fetched until after the <code>&quot;http://some.url.1&quot;</code> request is finished. These two requests are independent, so the better performance approach would likely be to have them run at the same time.</p>
+<p>But how exactly would you do that with a generator and <code>yield</code>? We know that <code>yield</code> is only a single pause point in the code, so you can’t really do two pauses at the same time.</p>
+<p>The most natural and effective answer is to base the async flow on Promises, specifically on their capability to manage state in a time-independent fashion (see “Future Value” in Chapter 3).</p>
+<p>The simplest approach:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="kw">function</span> <span class="op">*</span><span class="at">foo</span>() <span class="op">{</span>
+    <span class="co">// make both requests &quot;in parallel&quot;</span>
+    <span class="kw">var</span> p1 <span class="op">=</span> <span class="at">request</span>( <span class="st">&quot;http://some.url.1&quot;</span> )<span class="op">;</span>
+    <span class="kw">var</span> p2 <span class="op">=</span> <span class="at">request</span>( <span class="st">&quot;http://some.url.2&quot;</span> )<span class="op">;</span>
+
+    <span class="co">// wait until both promises resolve</span>
+    <span class="kw">var</span> r1 <span class="op">=</span> <span class="kw">yield</span> p1<span class="op">;</span>
+    <span class="kw">var</span> r2 <span class="op">=</span> <span class="kw">yield</span> p2<span class="op">;</span>
+
+    <span class="kw">var</span> r3 <span class="op">=</span> <span class="kw">yield</span> <span class="at">request</span>(
+        <span class="st">&quot;http://some.url.3/?v=&quot;</span> <span class="op">+</span> r1 <span class="op">+</span> <span class="st">&quot;,&quot;</span> <span class="op">+</span> r2
+    )<span class="op">;</span>
+
+    <span class="va">console</span>.<span class="at">log</span>( r3 )<span class="op">;</span>
+<span class="op">}</span>
+
+<span class="co">// use previously defined `run(..)` utility</span>
+<span class="at">run</span>( foo )<span class="op">;</span></code></pre></div>
+<p>Why is this different from the previous snippet? Look at where the <code>yield</code> is and is not. <code>p1</code> and <code>p2</code> are promises for Ajax requests made concurrently (aka “in parallel”). It doesn’t matter which one finishes first, because promises will hold onto their resolved state for as long as necessary.</p>
+<p>Then we use two subsequent <code>yield</code> statements to wait for and retrieve the resolutions from the promises (into <code>r1</code> and <code>r2</code>, respectively). If <code>p1</code> resolves first, the <code>yield p1</code> resumes first then waits on the <code>yield p2</code> to resume. If <code>p2</code> resolves first, it will just patiently hold onto that resolution value until asked, but the <code>yield p1</code> will hold on first, until <code>p1</code> resolves.</p>
+<p>Either way, both <code>p1</code> and <code>p2</code> will run concurrently, and both have to finish, in either order, before the <code>r3 = yield request..</code> Ajax request will be made.</p>
+<p>If that flow control processing model sounds familiar, it’s basically the same as what we identified in Chapter 3 as the “gate” pattern, enabled by the <code>Promise.all([ .. ])</code> utility. So, we could also express the flow control like this:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="kw">function</span> <span class="op">*</span><span class="at">foo</span>() <span class="op">{</span>
+    <span class="co">// make both requests &quot;in parallel,&quot; and</span>
+    <span class="co">// wait until both promises resolve</span>
+    <span class="kw">var</span> results <span class="op">=</span> <span class="kw">yield</span> <span class="va">Promise</span>.<span class="at">all</span>( [
+        <span class="at">request</span>( <span class="st">&quot;http://some.url.1&quot;</span> )<span class="op">,</span>
+        <span class="at">request</span>( <span class="st">&quot;http://some.url.2&quot;</span> )
+    ] )<span class="op">;</span>
+
+    <span class="kw">var</span> r1 <span class="op">=</span> results[<span class="dv">0</span>]<span class="op">;</span>
+    <span class="kw">var</span> r2 <span class="op">=</span> results[<span class="dv">1</span>]<span class="op">;</span>
+
+    <span class="kw">var</span> r3 <span class="op">=</span> <span class="kw">yield</span> <span class="at">request</span>(
+        <span class="st">&quot;http://some.url.3/?v=&quot;</span> <span class="op">+</span> r1 <span class="op">+</span> <span class="st">&quot;,&quot;</span> <span class="op">+</span> r2
+    )<span class="op">;</span>
+
+    <span class="va">console</span>.<span class="at">log</span>( r3 )<span class="op">;</span>
+<span class="op">}</span>
+
+<span class="co">// use previously defined `run(..)` utility</span>
+<span class="at">run</span>( foo )<span class="op">;</span></code></pre></div>
+<p><strong>Note:</strong> As we discussed in Chapter 3, we can even use ES6 destructuring assignment to simplify the <code>var r1 = .. var r2 = ..</code> assignments, with <code>var [r1,r2] = results</code>.</p>
+<p>In other words, all of the concurrency capabilities of Promises are available to us in the generator+Promise approach. So in any place where you need more than sequential this-then-that async flow control steps, Promises are likely your best bet.</p>
+<div id="promises-hidden" class="section level4">
+<h4>Promises, Hidden</h4>
+<p>As a word of stylistic caution, be careful about how much Promise logic you include <strong>inside your generators</strong>. The whole point of using generators for asynchrony in the way we’ve described is to create simple, sequential, sync-looking code, and to hide as much of the details of asynchrony away from that code as possible.</p>
+<p>For example, this might be a cleaner approach:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="co">// note: normal function, not generator</span>
+<span class="kw">function</span> <span class="at">bar</span>(url1<span class="op">,</span>url2) <span class="op">{</span>
+    <span class="cf">return</span> <span class="va">Promise</span>.<span class="at">all</span>( [
+        <span class="at">request</span>( url1 )<span class="op">,</span>
+        <span class="at">request</span>( url2 )
+    ] )<span class="op">;</span>
+<span class="op">}</span>
+
+<span class="kw">function</span> <span class="op">*</span><span class="at">foo</span>() <span class="op">{</span>
+    <span class="co">// hide the Promise-based concurrency details</span>
+    <span class="co">// inside `bar(..)`</span>
+    <span class="kw">var</span> results <span class="op">=</span> <span class="kw">yield</span> <span class="at">bar</span>(
+        <span class="st">&quot;http://some.url.1&quot;</span><span class="op">,</span>
+        <span class="st">&quot;http://some.url.2&quot;</span>
+    )<span class="op">;</span>
+
+    <span class="kw">var</span> r1 <span class="op">=</span> results[<span class="dv">0</span>]<span class="op">;</span>
+    <span class="kw">var</span> r2 <span class="op">=</span> results[<span class="dv">1</span>]<span class="op">;</span>
+
+    <span class="kw">var</span> r3 <span class="op">=</span> <span class="kw">yield</span> <span class="at">request</span>(
+        <span class="st">&quot;http://some.url.3/?v=&quot;</span> <span class="op">+</span> r1 <span class="op">+</span> <span class="st">&quot;,&quot;</span> <span class="op">+</span> r2
+    )<span class="op">;</span>
+
+    <span class="va">console</span>.<span class="at">log</span>( r3 )<span class="op">;</span>
+<span class="op">}</span>
+
+<span class="co">// use previously defined `run(..)` utility</span>
+<span class="at">run</span>( foo )<span class="op">;</span></code></pre></div>
+<p>Inside <code>*foo()</code>, it’s cleaner and clearer that all we’re doing is just asking <code>bar(..)</code> to get us some <code>results</code>, and we’ll <code>yield</code>-wait on that to happen. We don’t have to care that under the covers a <code>Promise.all([ .. ])</code> Promise composition will be used to make that happen.</p>
+<p><strong>We treat asynchrony, and indeed Promises, as an implementation detail.</strong></p>
+<p>Hiding your Promise logic inside a function that you merely call from your generator is especially useful if you’re going to do a sophisticated series flow-control. For example:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="kw">function</span> <span class="at">bar</span>() <span class="op">{</span>
+    <span class="cf">return</span>  <span class="va">Promise</span>.<span class="at">all</span>( [
+          <span class="at">baz</span>( .. )
+          .<span class="at">then</span>( .. )<span class="op">,</span>
+          <span class="va">Promise</span>.<span class="at">race</span>( [ .. ] )
+        ] )
+        .<span class="at">then</span>( .. )
+<span class="op">}</span></code></pre></div>
+<p>That kind of logic is sometimes required, and if you dump it directly inside your generator(s), you’ve defeated most of the reason why you would want to use generators in the first place. We <em>should</em> intentionally abstract such details away from our generator code so that they don’t clutter up the higher level task expression.</p>
+<p>Beyond creating code that is both functional and performant, you should also strive to make code that is as reason-able and maintainable as possible.</p>
+<p><strong>Note:</strong> Abstraction is not <em>always</em> a healthy thing for programming – many times it can increase complexity in exchange for terseness. But in this case, I believe it’s much healthier for your generator+Promise async code than the alternatives. As with all such advice, though, pay attention to your specific situations and make proper decisions for you and your team.</p>
+</div>
+</div>
+</div>
+<div id="generator-delegation" class="section level2">
+<h2>Generator Delegation</h2>
+<p>In the previous section, we showed calling regular functions from inside a generator, and how that remains a useful technique for abstracting away implementation details (like async Promise flow). But the main drawback of using a normal function for this task is that it has to behave by the normal function rules, which means it cannot pause itself with <code>yield</code> like a generator can.</p>
+<p>It may then occur to you that you might try to call one generator from another generator, using our <code>run(..)</code> helper, such as:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="kw">function</span> <span class="op">*</span><span class="at">foo</span>() <span class="op">{</span>
+    <span class="kw">var</span> r2 <span class="op">=</span> <span class="kw">yield</span> <span class="at">request</span>( <span class="st">&quot;http://some.url.2&quot;</span> )<span class="op">;</span>
+    <span class="kw">var</span> r3 <span class="op">=</span> <span class="kw">yield</span> <span class="at">request</span>( <span class="st">&quot;http://some.url.3/?v=&quot;</span> <span class="op">+</span> r2 )<span class="op">;</span>
+
+    <span class="cf">return</span> r3<span class="op">;</span>
+<span class="op">}</span>
+
+<span class="kw">function</span> <span class="op">*</span><span class="at">bar</span>() <span class="op">{</span>
+    <span class="kw">var</span> r1 <span class="op">=</span> <span class="kw">yield</span> <span class="at">request</span>( <span class="st">&quot;http://some.url.1&quot;</span> )<span class="op">;</span>
+
+    <span class="co">// &quot;delegating&quot; to `*foo()` via `run(..)`</span>
+    <span class="kw">var</span> r3 <span class="op">=</span> <span class="kw">yield</span> <span class="at">run</span>( foo )<span class="op">;</span>
+
+    <span class="va">console</span>.<span class="at">log</span>( r3 )<span class="op">;</span>
+<span class="op">}</span>
+
+<span class="at">run</span>( bar )<span class="op">;</span></code></pre></div>
+<p>We run <code>*foo()</code> inside of <code>*bar()</code> by using our <code>run(..)</code> utility again. We take advantage here of the fact that the <code>run(..)</code> we defined earlier returns a promise which is resolved when its generator is run to completion (or errors out), so if we <code>yield</code> out to a <code>run(..)</code> instance the promise from another <code>run(..)</code> call, it automatically pauses <code>*bar()</code> until <code>*foo()</code> finishes.</p>
+<p>But there’s an even better way to integrate calling <code>*foo()</code> into <code>*bar()</code>, and it’s called <code>yield</code>-delegation. The special syntax for <code>yield</code>-delegation is: <code>yield * __</code> (notice the extra <code>*</code>). Before we see it work in our previous example, let’s look at a simpler scenario:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="kw">function</span> <span class="op">*</span><span class="at">foo</span>() <span class="op">{</span>
+    <span class="va">console</span>.<span class="at">log</span>( <span class="st">&quot;`*foo()` starting&quot;</span> )<span class="op">;</span>
+    <span class="kw">yield</span> <span class="dv">3</span><span class="op">;</span>
+    <span class="kw">yield</span> <span class="dv">4</span><span class="op">;</span>
+    <span class="va">console</span>.<span class="at">log</span>( <span class="st">&quot;`*foo()` finished&quot;</span> )<span class="op">;</span>
+<span class="op">}</span>
+
+<span class="kw">function</span> <span class="op">*</span><span class="at">bar</span>() <span class="op">{</span>
+    <span class="kw">yield</span> <span class="dv">1</span><span class="op">;</span>
+    <span class="kw">yield</span> <span class="dv">2</span><span class="op">;</span>
+    <span class="kw">yield</span> <span class="op">*</span><span class="at">foo</span>()<span class="op">;</span>   <span class="co">// `yield`-delegation!</span>
+    <span class="kw">yield</span> <span class="dv">5</span><span class="op">;</span>
+<span class="op">}</span>
+
+<span class="kw">var</span> it <span class="op">=</span> <span class="at">bar</span>()<span class="op">;</span>
+
+<span class="va">it</span>.<span class="at">next</span>().<span class="at">value</span><span class="op">;</span>    <span class="co">// 1</span>
+<span class="va">it</span>.<span class="at">next</span>().<span class="at">value</span><span class="op">;</span>    <span class="co">// 2</span>
+<span class="va">it</span>.<span class="at">next</span>().<span class="at">value</span><span class="op">;</span>    <span class="co">// `*foo()` starting</span>
+                    <span class="co">// 3</span>
+<span class="va">it</span>.<span class="at">next</span>().<span class="at">value</span><span class="op">;</span>    <span class="co">// 4</span>
+<span class="va">it</span>.<span class="at">next</span>().<span class="at">value</span><span class="op">;</span>    <span class="co">// `*foo()` finished</span>
+                    <span class="co">// 5</span></code></pre></div>
+<p><strong>Note:</strong> Similar to a note earlier in the chapter where I explained why I prefer <code>function *foo() ..</code> instead of <code>function* foo() ..</code>, I also prefer – differing from most other documentation on the topic – to say <code>yield *foo()</code> instead of <code>yield* foo()</code>. The placement of the <code>*</code> is purely stylistic and up to your best judgment. But I find the consistency of styling attractive.</p>
+<p>How does the <code>yield *foo()</code> delegation work?</p>
+<p>First, calling <code>foo()</code> creates an <em>iterator</em> exactly as we’ve already seen. Then, <code>yield *</code> delegates/transfers the <em>iterator</em> instance control (of the present <code>*bar()</code> generator) over to this other <code>*foo()</code> <em>iterator</em>.</p>
+<p>So, the first two <code>it.next()</code> calls are controlling <code>*bar()</code>, but when we make the third <code>it.next()</code> call, now <code>*foo()</code> starts up, and now we’re controlling <code>*foo()</code> instead of <code>*bar()</code>. That’s why it’s called delegation – <code>*bar()</code> delegated its iteration control to <code>*foo()</code>.</p>
+<p>As soon as the <code>it</code> <em>iterator</em> control exhausts the entire <code>*foo()</code> <em>iterator</em>, it automatically returns to controlling <code>*bar()</code>.</p>
+<p>So now back to the previous example with the three sequential Ajax requests:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="kw">function</span> <span class="op">*</span><span class="at">foo</span>() <span class="op">{</span>
+    <span class="kw">var</span> r2 <span class="op">=</span> <span class="kw">yield</span> <span class="at">request</span>( <span class="st">&quot;http://some.url.2&quot;</span> )<span class="op">;</span>
+    <span class="kw">var</span> r3 <span class="op">=</span> <span class="kw">yield</span> <span class="at">request</span>( <span class="st">&quot;http://some.url.3/?v=&quot;</span> <span class="op">+</span> r2 )<span class="op">;</span>
+
+    <span class="cf">return</span> r3<span class="op">;</span>
+<span class="op">}</span>
+
+<span class="kw">function</span> <span class="op">*</span><span class="at">bar</span>() <span class="op">{</span>
+    <span class="kw">var</span> r1 <span class="op">=</span> <span class="kw">yield</span> <span class="at">request</span>( <span class="st">&quot;http://some.url.1&quot;</span> )<span class="op">;</span>
+
+    <span class="co">// &quot;delegating&quot; to `*foo()` via `yield*`</span>
+    <span class="kw">var</span> r3 <span class="op">=</span> <span class="kw">yield</span> <span class="op">*</span><span class="at">foo</span>()<span class="op">;</span>
+
+    <span class="va">console</span>.<span class="at">log</span>( r3 )<span class="op">;</span>
+<span class="op">}</span>
+
+<span class="at">run</span>( bar )<span class="op">;</span></code></pre></div>
+<p>The only difference between this snippet and the version used earlier is the use of <code>yield *foo()</code> instead of the previous <code>yield run(foo)</code>.</p>
+<p><strong>Note:</strong> <code>yield *</code> yields iteration control, not generator control; when you invoke the <code>*foo()</code> generator, you’re now <code>yield</code>-delegating to its <em>iterator</em>. But you can actually <code>yield</code>-delegate to any <em>iterable</em>; <code>yield *[1,2,3]</code> would consume the default <em>iterator</em> for the <code>[1,2,3]</code> array value.</p>
+<div id="why-delegation" class="section level3">
+<h3>Why Delegation?</h3>
+<p>The purpose of <code>yield</code>-delegation is mostly code organization, and in that way is symmetrical with normal function calling.</p>
+<p>Imagine two modules that respectively provide methods <code>foo()</code> and <code>bar()</code>, where <code>bar()</code> calls <code>foo()</code>. The reason the two are separate is generally because the proper organization of code for the program calls for them to be in separate functions. For example, there may be cases where <code>foo()</code> is called standalone, and other places where <code>bar()</code> calls <code>foo()</code>.</p>
+<p>For all these exact same reasons, keeping generators separate aids in program readability, maintenance, and debuggability. In that respect, <code>yield *</code> is a syntactic shortcut for manually iterating over the steps of <code>*foo()</code> while inside of <code>*bar()</code>.</p>
+<p>Such manual approach would be especially complex if the steps in <code>*foo()</code> were asynchronous, which is why you’d probably need to use that <code>run(..)</code> utility to do it. And as we’ve shown, <code>yield *foo()</code> eliminates the need for a sub-instance of the <code>run(..)</code> utility (like <code>run(foo)</code>).</p>
+</div>
+<div id="delegating-messages" class="section level3">
+<h3>Delegating Messages</h3>
+<p>You may wonder how this <code>yield</code>-delegation works not just with <em>iterator</em> control but with the two-way message passing. Carefully follow the flow of messages in and out, through the <code>yield</code>-delegation:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="kw">function</span> <span class="op">*</span><span class="at">foo</span>() <span class="op">{</span>
+    <span class="va">console</span>.<span class="at">log</span>( <span class="st">&quot;inside `*foo()`:&quot;</span><span class="op">,</span> <span class="kw">yield</span> <span class="st">&quot;B&quot;</span> )<span class="op">;</span>
+
+    <span class="va">console</span>.<span class="at">log</span>( <span class="st">&quot;inside `*foo()`:&quot;</span><span class="op">,</span> <span class="kw">yield</span> <span class="st">&quot;C&quot;</span> )<span class="op">;</span>
+
+    <span class="cf">return</span> <span class="st">&quot;D&quot;</span><span class="op">;</span>
+<span class="op">}</span>
+
+<span class="kw">function</span> <span class="op">*</span><span class="at">bar</span>() <span class="op">{</span>
+    <span class="va">console</span>.<span class="at">log</span>( <span class="st">&quot;inside `*bar()`:&quot;</span><span class="op">,</span> <span class="kw">yield</span> <span class="st">&quot;A&quot;</span> )<span class="op">;</span>
+
+    <span class="co">// `yield`-delegation!</span>
+    <span class="va">console</span>.<span class="at">log</span>( <span class="st">&quot;inside `*bar()`:&quot;</span><span class="op">,</span> <span class="kw">yield</span> <span class="op">*</span><span class="at">foo</span>() )<span class="op">;</span>
+
+    <span class="va">console</span>.<span class="at">log</span>( <span class="st">&quot;inside `*bar()`:&quot;</span><span class="op">,</span> <span class="kw">yield</span> <span class="st">&quot;E&quot;</span> )<span class="op">;</span>
+
+    <span class="cf">return</span> <span class="st">&quot;F&quot;</span><span class="op">;</span>
+<span class="op">}</span>
+
+<span class="kw">var</span> it <span class="op">=</span> <span class="at">bar</span>()<span class="op">;</span>
+
+<span class="va">console</span>.<span class="at">log</span>( <span class="st">&quot;outside:&quot;</span><span class="op">,</span> <span class="va">it</span>.<span class="at">next</span>().<span class="at">value</span> )<span class="op">;</span>
+<span class="co">// outside: A</span>
+
+<span class="va">console</span>.<span class="at">log</span>( <span class="st">&quot;outside:&quot;</span><span class="op">,</span> <span class="va">it</span>.<span class="at">next</span>( <span class="dv">1</span> ).<span class="at">value</span> )<span class="op">;</span>
+<span class="co">// inside `*bar()`: 1</span>
+<span class="co">// outside: B</span>
+
+<span class="va">console</span>.<span class="at">log</span>( <span class="st">&quot;outside:&quot;</span><span class="op">,</span> <span class="va">it</span>.<span class="at">next</span>( <span class="dv">2</span> ).<span class="at">value</span> )<span class="op">;</span>
+<span class="co">// inside `*foo()`: 2</span>
+<span class="co">// outside: C</span>
+
+<span class="va">console</span>.<span class="at">log</span>( <span class="st">&quot;outside:&quot;</span><span class="op">,</span> <span class="va">it</span>.<span class="at">next</span>( <span class="dv">3</span> ).<span class="at">value</span> )<span class="op">;</span>
+<span class="co">// inside `*foo()`: 3</span>
+<span class="co">// inside `*bar()`: D</span>
+<span class="co">// outside: E</span>
+
+<span class="va">console</span>.<span class="at">log</span>( <span class="st">&quot;outside:&quot;</span><span class="op">,</span> <span class="va">it</span>.<span class="at">next</span>( <span class="dv">4</span> ).<span class="at">value</span> )<span class="op">;</span>
+<span class="co">// inside `*bar()`: 4</span>
+<span class="co">// outside: F</span></code></pre></div>
+<p>Pay particular attention to the processing steps after the <code>it.next(3)</code> call:</p>
+<ol style="list-style-type: decimal">
+<li>The <code>3</code> value is passed (through the <code>yield</code>-delegation in <code>*bar()</code>) into the waiting <code>yield &quot;C&quot;</code> expression inside of <code>*foo()</code>.</li>
+<li><code>*foo()</code> then calls <code>return &quot;D&quot;</code>, but this value doesn’t get returned all the way back to the outside <code>it.next(3)</code> call.</li>
+<li>Instead, the <code>&quot;D&quot;</code> value is sent as the result of the waiting <code>yield *foo()</code> expression inside of <code>*bar()</code> – this <code>yield</code>-delegation expression has essentially been paused while all of <code>*foo()</code> was exhausted. So <code>&quot;D&quot;</code> ends up inside of <code>*bar()</code> for it to print out.</li>
+<li><code>yield &quot;E&quot;</code> is called inside of <code>*bar()</code>, and the <code>&quot;E&quot;</code> value is yielded to the outside as the result of the <code>it.next(3)</code> call.</li>
+</ol>
+<p>From the perspective of the external <em>iterator</em> (<code>it</code>), it doesn’t appear any differently between controlling the initial generator or a delegated one.</p>
+<p>In fact, <code>yield</code>-delegation doesn’t even have to be directed to another generator; it can just be directed to a non-generator, general <em>iterable</em>. For example:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="kw">function</span> <span class="op">*</span><span class="at">bar</span>() <span class="op">{</span>
+    <span class="va">console</span>.<span class="at">log</span>( <span class="st">&quot;inside `*bar()`:&quot;</span><span class="op">,</span> <span class="kw">yield</span> <span class="st">&quot;A&quot;</span> )<span class="op">;</span>
+
+    <span class="co">// `yield`-delegation to a non-generator!</span>
+    <span class="va">console</span>.<span class="at">log</span>( <span class="st">&quot;inside `*bar()`:&quot;</span><span class="op">,</span> <span class="kw">yield</span> <span class="op">*</span>[ <span class="st">&quot;B&quot;</span><span class="op">,</span> <span class="st">&quot;C&quot;</span><span class="op">,</span> <span class="st">&quot;D&quot;</span> ] )<span class="op">;</span>
+
+    <span class="va">console</span>.<span class="at">log</span>( <span class="st">&quot;inside `*bar()`:&quot;</span><span class="op">,</span> <span class="kw">yield</span> <span class="st">&quot;E&quot;</span> )<span class="op">;</span>
+
+    <span class="cf">return</span> <span class="st">&quot;F&quot;</span><span class="op">;</span>
+<span class="op">}</span>
+
+<span class="kw">var</span> it <span class="op">=</span> <span class="at">bar</span>()<span class="op">;</span>
+
+<span class="va">console</span>.<span class="at">log</span>( <span class="st">&quot;outside:&quot;</span><span class="op">,</span> <span class="va">it</span>.<span class="at">next</span>().<span class="at">value</span> )<span class="op">;</span>
+<span class="co">// outside: A</span>
+
+<span class="va">console</span>.<span class="at">log</span>( <span class="st">&quot;outside:&quot;</span><span class="op">,</span> <span class="va">it</span>.<span class="at">next</span>( <span class="dv">1</span> ).<span class="at">value</span> )<span class="op">;</span>
+<span class="co">// inside `*bar()`: 1</span>
+<span class="co">// outside: B</span>
+
+<span class="va">console</span>.<span class="at">log</span>( <span class="st">&quot;outside:&quot;</span><span class="op">,</span> <span class="va">it</span>.<span class="at">next</span>( <span class="dv">2</span> ).<span class="at">value</span> )<span class="op">;</span>
+<span class="co">// outside: C</span>
+
+<span class="va">console</span>.<span class="at">log</span>( <span class="st">&quot;outside:&quot;</span><span class="op">,</span> <span class="va">it</span>.<span class="at">next</span>( <span class="dv">3</span> ).<span class="at">value</span> )<span class="op">;</span>
+<span class="co">// outside: D</span>
+
+<span class="va">console</span>.<span class="at">log</span>( <span class="st">&quot;outside:&quot;</span><span class="op">,</span> <span class="va">it</span>.<span class="at">next</span>( <span class="dv">4</span> ).<span class="at">value</span> )<span class="op">;</span>
+<span class="co">// inside `*bar()`: undefined</span>
+<span class="co">// outside: E</span>
+
+<span class="va">console</span>.<span class="at">log</span>( <span class="st">&quot;outside:&quot;</span><span class="op">,</span> <span class="va">it</span>.<span class="at">next</span>( <span class="dv">5</span> ).<span class="at">value</span> )<span class="op">;</span>
+<span class="co">// inside `*bar()`: 5</span>
+<span class="co">// outside: F</span></code></pre></div>
+<p>Notice the differences in where the messages were received/reported between this example and the one previous.</p>
+<p>Most strikingly, the default <code>array</code> <em>iterator</em> doesn’t care about any messages sent in via <code>next(..)</code> calls, so the values <code>2</code>, <code>3</code>, and <code>4</code> are essentially ignored. Also, because that <em>iterator</em> has no explicit <code>return</code> value (unlike the previously used <code>*foo()</code>), the <code>yield *</code> expression gets an <code>undefined</code> when it finishes.</p>
+<div id="exceptions-delegated-too" class="section level4">
+<h4>Exceptions Delegated, Too!</h4>
+<p>In the same way that <code>yield</code>-delegation transparently passes messages through in both directions, errors/exceptions also pass in both directions:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="kw">function</span> <span class="op">*</span><span class="at">foo</span>() <span class="op">{</span>
+    <span class="cf">try</span> <span class="op">{</span>
+        <span class="kw">yield</span> <span class="st">&quot;B&quot;</span><span class="op">;</span>
+    <span class="op">}</span>
+    <span class="cf">catch</span> (err) <span class="op">{</span>
+        <span class="va">console</span>.<span class="at">log</span>( <span class="st">&quot;error caught inside `*foo()`:&quot;</span><span class="op">,</span> err )<span class="op">;</span>
+    <span class="op">}</span>
+
+    <span class="kw">yield</span> <span class="st">&quot;C&quot;</span><span class="op">;</span>
+
+    <span class="cf">throw</span> <span class="st">&quot;D&quot;</span><span class="op">;</span>
+<span class="op">}</span>
+
+<span class="kw">function</span> <span class="op">*</span><span class="at">bar</span>() <span class="op">{</span>
+    <span class="kw">yield</span> <span class="st">&quot;A&quot;</span><span class="op">;</span>
+
+    <span class="cf">try</span> <span class="op">{</span>
+        <span class="kw">yield</span> <span class="op">*</span><span class="at">foo</span>()<span class="op">;</span>
+    <span class="op">}</span>
+    <span class="cf">catch</span> (err) <span class="op">{</span>
+        <span class="va">console</span>.<span class="at">log</span>( <span class="st">&quot;error caught inside `*bar()`:&quot;</span><span class="op">,</span> err )<span class="op">;</span>
+    <span class="op">}</span>
+
+    <span class="kw">yield</span> <span class="st">&quot;E&quot;</span><span class="op">;</span>
+
+    <span class="kw">yield</span> <span class="op">*</span><span class="at">baz</span>()<span class="op">;</span>
+
+    <span class="co">// note: can&#39;t get here!</span>
+    <span class="kw">yield</span> <span class="st">&quot;G&quot;</span><span class="op">;</span>
+<span class="op">}</span>
+
+<span class="kw">function</span> <span class="op">*</span><span class="at">baz</span>() <span class="op">{</span>
+    <span class="cf">throw</span> <span class="st">&quot;F&quot;</span><span class="op">;</span>
+<span class="op">}</span>
+
+<span class="kw">var</span> it <span class="op">=</span> <span class="at">bar</span>()<span class="op">;</span>
+
+<span class="va">console</span>.<span class="at">log</span>( <span class="st">&quot;outside:&quot;</span><span class="op">,</span> <span class="va">it</span>.<span class="at">next</span>().<span class="at">value</span> )<span class="op">;</span>
+<span class="co">// outside: A</span>
+
+<span class="va">console</span>.<span class="at">log</span>( <span class="st">&quot;outside:&quot;</span><span class="op">,</span> <span class="va">it</span>.<span class="at">next</span>( <span class="dv">1</span> ).<span class="at">value</span> )<span class="op">;</span>
+<span class="co">// outside: B</span>
+
+<span class="va">console</span>.<span class="at">log</span>( <span class="st">&quot;outside:&quot;</span><span class="op">,</span> <span class="va">it</span>.<span class="at">throw</span>( <span class="dv">2</span> ).<span class="at">value</span> )<span class="op">;</span>
+<span class="co">// error caught inside `*foo()`: 2</span>
+<span class="co">// outside: C</span>
+
+<span class="va">console</span>.<span class="at">log</span>( <span class="st">&quot;outside:&quot;</span><span class="op">,</span> <span class="va">it</span>.<span class="at">next</span>( <span class="dv">3</span> ).<span class="at">value</span> )<span class="op">;</span>
+<span class="co">// error caught inside `*bar()`: D</span>
+<span class="co">// outside: E</span>
+
+<span class="cf">try</span> <span class="op">{</span>
+    <span class="va">console</span>.<span class="at">log</span>( <span class="st">&quot;outside:&quot;</span><span class="op">,</span> <span class="va">it</span>.<span class="at">next</span>( <span class="dv">4</span> ).<span class="at">value</span> )<span class="op">;</span>
+<span class="op">}</span>
+<span class="cf">catch</span> (err) <span class="op">{</span>
+    <span class="va">console</span>.<span class="at">log</span>( <span class="st">&quot;error caught outside:&quot;</span><span class="op">,</span> err )<span class="op">;</span>
+<span class="op">}</span>
+<span class="co">// error caught outside: F</span></code></pre></div>
+<p>Some things to note from this snippet:</p>
+<ol style="list-style-type: decimal">
+<li>When we call <code>it.throw(2)</code>, it sends the error message <code>2</code> into <code>*bar()</code>, which delegates that to <code>*foo()</code>, which then <code>catch</code>es it and handles it gracefully. Then, the <code>yield &quot;C&quot;</code> sends <code>&quot;C&quot;</code> back out as the return <code>value</code> from the <code>it.throw(2)</code> call.</li>
+<li>The <code>&quot;D&quot;</code> value that’s next <code>throw</code>n from inside <code>*foo()</code> propagates out to <code>*bar()</code>, which <code>catch</code>es it and handles it gracefully. Then the <code>yield &quot;E&quot;</code> sends <code>&quot;E&quot;</code> back out as the return <code>value</code> from the <code>it.next(3)</code> call.</li>
+<li>Next, the exception <code>throw</code>n from <code>*baz()</code> isn’t caught in <code>*bar()</code> – though we did <code>catch</code> it outside – so both <code>*baz()</code> and <code>*bar()</code> are set to a completed state. After this snippet, you would not be able to get the <code>&quot;G&quot;</code> value out with any subsequent <code>next(..)</code> call(s) – they will just return <code>undefined</code> for <code>value</code>.</li>
+</ol>
+</div>
+</div>
+<div id="delegating-asynchrony" class="section level3">
+<h3>Delegating Asynchrony</h3>
+<p>Let’s finally get back to our earlier <code>yield</code>-delegation example with the multiple sequential Ajax requests:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="kw">function</span> <span class="op">*</span><span class="at">foo</span>() <span class="op">{</span>
+    <span class="kw">var</span> r2 <span class="op">=</span> <span class="kw">yield</span> <span class="at">request</span>( <span class="st">&quot;http://some.url.2&quot;</span> )<span class="op">;</span>
+    <span class="kw">var</span> r3 <span class="op">=</span> <span class="kw">yield</span> <span class="at">request</span>( <span class="st">&quot;http://some.url.3/?v=&quot;</span> <span class="op">+</span> r2 )<span class="op">;</span>
+
+    <span class="cf">return</span> r3<span class="op">;</span>
+<span class="op">}</span>
+
+<span class="kw">function</span> <span class="op">*</span><span class="at">bar</span>() <span class="op">{</span>
+    <span class="kw">var</span> r1 <span class="op">=</span> <span class="kw">yield</span> <span class="at">request</span>( <span class="st">&quot;http://some.url.1&quot;</span> )<span class="op">;</span>
+
+    <span class="kw">var</span> r3 <span class="op">=</span> <span class="kw">yield</span> <span class="op">*</span><span class="at">foo</span>()<span class="op">;</span>
+
+    <span class="va">console</span>.<span class="at">log</span>( r3 )<span class="op">;</span>
+<span class="op">}</span>
+
+<span class="at">run</span>( bar )<span class="op">;</span></code></pre></div>
+<p>Instead of calling <code>yield run(foo)</code> inside of <code>*bar()</code>, we just call <code>yield *foo()</code>.</p>
+<p>In the previous version of this example, the Promise mechanism (controlled by <code>run(..)</code>) was used to transport the value from <code>return r3</code> in <code>*foo()</code> to the local variable <code>r3</code> inside <code>*bar()</code>. Now, that value is just returned back directly via the <code>yield *</code> mechanics.</p>
+<p>Otherwise, the behavior is pretty much identical.</p>
+</div>
+<div id="delegating-recursion" class="section level3">
+<h3>Delegating “Recursion”</h3>
+<p>Of course, <code>yield</code>-delegation can keep following as many delegation steps as you wire up. You could even use <code>yield</code>-delegation for async-capable generator “recursion” – a generator <code>yield</code>-delegating to itself:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="kw">function</span> <span class="op">*</span><span class="at">foo</span>(val) <span class="op">{</span>
+    <span class="cf">if</span> (val <span class="op">&gt;</span> <span class="dv">1</span>) <span class="op">{</span>
+        <span class="co">// generator recursion</span>
+        val <span class="op">=</span> <span class="kw">yield</span> <span class="op">*</span><span class="at">foo</span>( val <span class="op">-</span> <span class="dv">1</span> )<span class="op">;</span>
+    <span class="op">}</span>
+
+    <span class="cf">return</span> <span class="kw">yield</span> <span class="at">request</span>( <span class="st">&quot;http://some.url/?v=&quot;</span> <span class="op">+</span> val )<span class="op">;</span>
+<span class="op">}</span>
+
+<span class="kw">function</span> <span class="op">*</span><span class="at">bar</span>() <span class="op">{</span>
+    <span class="kw">var</span> r1 <span class="op">=</span> <span class="kw">yield</span> <span class="op">*</span><span class="at">foo</span>( <span class="dv">3</span> )<span class="op">;</span>
+    <span class="va">console</span>.<span class="at">log</span>( r1 )<span class="op">;</span>
+<span class="op">}</span>
+
+<span class="at">run</span>( bar )<span class="op">;</span></code></pre></div>
+<p><strong>Note:</strong> Our <code>run(..)</code> utility could have been called with <code>run( foo, 3 )</code>, because it supports additional parameters being passed along to the initialization of the generator. However, we used a parameter-free <code>*bar()</code> here to highlight the flexibility of <code>yield *</code>.</p>
+<p>What processing steps follow from that code? Hang on, this is going to be quite intricate to describe in detail:</p>
+<ol style="list-style-type: decimal">
+<li><code>run(bar)</code> starts up the <code>*bar()</code> generator.</li>
+<li><code>foo(3)</code> creates an <em>iterator</em> for <code>*foo(..)</code> and passes <code>3</code> as its <code>val</code> parameter.</li>
+<li>Because <code>3 &gt; 1</code>, <code>foo(2)</code> creates another <em>iterator</em> and passes in <code>2</code> as its <code>val</code> parameter.</li>
+<li>Because <code>2 &gt; 1</code>, <code>foo(1)</code> creates yet another <em>iterator</em> and passes in <code>1</code> as its <code>val</code> parameter.</li>
+<li><code>1 &gt; 1</code> is <code>false</code>, so we next call <code>request(..)</code> with the <code>1</code> value, and get a promise back for that first Ajax call.</li>
+<li>That promise is <code>yield</code>ed out, which comes back to the <code>*foo(2)</code> generator instance.</li>
+<li>The <code>yield *</code> passes that promise back out to the <code>*foo(3)</code> generator instance. Another <code>yield *</code> passes the promise out to the <code>*bar()</code> generator instance. And yet again another <code>yield *</code> passes the promise out to the <code>run(..)</code> utility, which will wait on that promise (for the first Ajax request) to proceed.</li>
+<li>When the promise resolves, its fulfillment message is sent to resume <code>*bar()</code>, which passes through the <code>yield *</code> into the <code>*foo(3)</code> instance, which then passes through the <code>yield *</code> to the <code>*foo(2)</code> generator instance, which then passes through the <code>yield *</code> to the normal <code>yield</code> that’s waiting in the <code>*foo(3)</code> generator instance.</li>
+<li>That first call’s Ajax response is now immediately <code>return</code>ed from the <code>*foo(3)</code> generator instance, which sends that value back as the result of the <code>yield *</code> expression in the <code>*foo(2)</code> instance, and assigned to its local <code>val</code> variable.</li>
+<li>Inside <code>*foo(2)</code>, a second Ajax request is made with <code>request(..)</code>, whose promise is <code>yield</code>ed back to the <code>*foo(1)</code> instance, and then <code>yield *</code> propagates all the way out to <code>run(..)</code> (step 7 again). When the promise resolves, the second Ajax response propagates all the way back into the <code>*foo(2)</code> generator instance, and is assigned to its local <code>val</code> variable.</li>
+<li>Finally, the third Ajax request is made with <code>request(..)</code>, its promise goes out to <code>run(..)</code>, and then its resolution value comes all the way back, which is then <code>return</code>ed so that it comes back to the waiting <code>yield *</code> expression in <code>*bar()</code>.</li>
+</ol>
+<p>Phew! A lot of crazy mental juggling, huh? You might want to read through that a few more times, and then go grab a snack to clear your head!</p>
+</div>
+</div>
+<div id="generator-concurrency" class="section level2">
+<h2>Generator Concurrency</h2>
+<p>As we discussed in both Chapter 1 and earlier in this chapter, two simultaneously running “processes” can cooperatively interleave their operations, and many times this can <em>yield</em> (pun intended) very powerful asynchrony expressions.</p>
+<p>Frankly, our earlier examples of concurrency interleaving of multiple generators showed how to make it really confusing. But we hinted that there’s places where this capability is quite useful.</p>
+<p>Recall a scenario we looked at in Chapter 1, where two different simultaneous Ajax response handlers needed to coordinate with each other to make sure that the data communication was not a race condition. We slotted the responses into the <code>res</code> array like this:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="kw">function</span> <span class="at">response</span>(data) <span class="op">{</span>
+    <span class="cf">if</span> (<span class="va">data</span>.<span class="at">url</span> <span class="op">==</span> <span class="st">&quot;http://some.url.1&quot;</span>) <span class="op">{</span>
+        res[<span class="dv">0</span>] <span class="op">=</span> data<span class="op">;</span>
+    <span class="op">}</span>
+    <span class="cf">else</span> <span class="cf">if</span> (<span class="va">data</span>.<span class="at">url</span> <span class="op">==</span> <span class="st">&quot;http://some.url.2&quot;</span>) <span class="op">{</span>
+        res[<span class="dv">1</span>] <span class="op">=</span> data<span class="op">;</span>
+    <span class="op">}</span>
+<span class="op">}</span></code></pre></div>
+<p>But how can we use multiple generators concurrently for this scenario?</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="co">// `request(..)` is a Promise-aware Ajax utility</span>
+
+<span class="kw">var</span> res <span class="op">=</span> []<span class="op">;</span>
+
+<span class="kw">function</span> <span class="op">*</span><span class="at">reqData</span>(url) <span class="op">{</span>
+    <span class="va">res</span>.<span class="at">push</span>(
+        <span class="kw">yield</span> <span class="at">request</span>( url )
+    )<span class="op">;</span>
+<span class="op">}</span></code></pre></div>
+<p><strong>Note:</strong> We’re going to use two instances of the <code>*reqData(..)</code> generator here, but there’s no difference to running a single instance of two different generators; both approaches are reasoned about identically. We’ll see two different generators coordinating in just a bit.</p>
+<p>Instead of having to manually sort out <code>res[0]</code> and <code>res[1]</code> assignments, we’ll use coordinated ordering so that <code>res.push(..)</code> properly slots the values in the expected and predictable order. The expressed logic thus should feel a bit cleaner.</p>
+<p>But how will we actually orchestrate this interaction? First, let’s just do it manually, with Promises:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="kw">var</span> it1 <span class="op">=</span> <span class="at">reqData</span>( <span class="st">&quot;http://some.url.1&quot;</span> )<span class="op">;</span>
+<span class="kw">var</span> it2 <span class="op">=</span> <span class="at">reqData</span>( <span class="st">&quot;http://some.url.2&quot;</span> )<span class="op">;</span>
+
+<span class="kw">var</span> p1 <span class="op">=</span> <span class="va">it1</span>.<span class="at">next</span>().<span class="at">value</span><span class="op">;</span>
+<span class="kw">var</span> p2 <span class="op">=</span> <span class="va">it2</span>.<span class="at">next</span>().<span class="at">value</span><span class="op">;</span>
+
+p1
+.<span class="at">then</span>( <span class="kw">function</span>(data)<span class="op">{</span>
+    <span class="va">it1</span>.<span class="at">next</span>( data )<span class="op">;</span>
+    <span class="cf">return</span> p2<span class="op">;</span>
+<span class="op">}</span> )
+.<span class="at">then</span>( <span class="kw">function</span>(data)<span class="op">{</span>
+    <span class="va">it2</span>.<span class="at">next</span>( data )<span class="op">;</span>
+<span class="op">}</span> )<span class="op">;</span></code></pre></div>
+<p><code>*reqData(..)</code>’s two instances are both started to make their Ajax requests, then paused with <code>yield</code>. Then we choose to resume the first instance when <code>p1</code> resolves, and then <code>p2</code>’s resolution will restart the second instance. In this way, we use Promise orchestration to ensure that <code>res[0]</code> will have the first response and <code>res[1]</code> will have the second response.</p>
+<p>But frankly, this is awfully manual, and it doesn’t really let the generators orchestrate themselves, which is where the true power can lie. Let’s try it a different way:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="co">// `request(..)` is a Promise-aware Ajax utility</span>
+
+<span class="kw">var</span> res <span class="op">=</span> []<span class="op">;</span>
+
+<span class="kw">function</span> <span class="op">*</span><span class="at">reqData</span>(url) <span class="op">{</span>
+    <span class="kw">var</span> data <span class="op">=</span> <span class="kw">yield</span> <span class="at">request</span>( url )<span class="op">;</span>
+
+    <span class="co">// transfer control</span>
+    <span class="kw">yield</span><span class="op">;</span>
+
+    <span class="va">res</span>.<span class="at">push</span>( data )<span class="op">;</span>
+<span class="op">}</span>
+
+<span class="kw">var</span> it1 <span class="op">=</span> <span class="at">reqData</span>( <span class="st">&quot;http://some.url.1&quot;</span> )<span class="op">;</span>
+<span class="kw">var</span> it2 <span class="op">=</span> <span class="at">reqData</span>( <span class="st">&quot;http://some.url.2&quot;</span> )<span class="op">;</span>
+
+<span class="kw">var</span> p1 <span class="op">=</span> <span class="va">it1</span>.<span class="at">next</span>().<span class="at">value</span><span class="op">;</span>
+<span class="kw">var</span> p2 <span class="op">=</span> <span class="va">it2</span>.<span class="at">next</span>().<span class="at">value</span><span class="op">;</span>
+
+<span class="va">p1</span>.<span class="at">then</span>( <span class="kw">function</span>(data)<span class="op">{</span>
+    <span class="va">it1</span>.<span class="at">next</span>( data )<span class="op">;</span>
+<span class="op">}</span> )<span class="op">;</span>
+
+<span class="va">p2</span>.<span class="at">then</span>( <span class="kw">function</span>(data)<span class="op">{</span>
+    <span class="va">it2</span>.<span class="at">next</span>( data )<span class="op">;</span>
+<span class="op">}</span> )<span class="op">;</span>
+
+<span class="va">Promise</span>.<span class="at">all</span>( [p1<span class="op">,</span>p2] )
+.<span class="at">then</span>( <span class="kw">function</span>()<span class="op">{</span>
+    <span class="va">it1</span>.<span class="at">next</span>()<span class="op">;</span>
+    <span class="va">it2</span>.<span class="at">next</span>()<span class="op">;</span>
+<span class="op">}</span> )<span class="op">;</span></code></pre></div>
+<p>OK, this is a bit better (though still manual!), because now the two instances of <code>*reqData(..)</code> run truly concurrently, and (at least for the first part) independently.</p>
+<p>In the previous snippet, the second instance was not given its data until after the first instance was totally finished. But here, both instances receive their data as soon as their respective responses come back, and then each instance does another <code>yield</code> for control transfer purposes. We then choose what order to resume them in the <code>Promise.all([ .. ])</code> handler.</p>
+<p>What may not be as obvious is that this approach hints at an easier form for a reusable utility, because of the symmetry. We can do even better. Let’s imagine using a utility called <code>runAll(..)</code>:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="co">// `request(..)` is a Promise-aware Ajax utility</span>
+
+<span class="kw">var</span> res <span class="op">=</span> []<span class="op">;</span>
+
+<span class="at">runAll</span>(
+    <span class="kw">function</span><span class="op">*</span>()<span class="op">{</span>
+        <span class="kw">var</span> p1 <span class="op">=</span> <span class="at">request</span>( <span class="st">&quot;http://some.url.1&quot;</span> )<span class="op">;</span>
+
+        <span class="co">// transfer control</span>
+        <span class="kw">yield</span><span class="op">;</span>
+
+        <span class="va">res</span>.<span class="at">push</span>( <span class="kw">yield</span> p1 )<span class="op">;</span>
+    <span class="op">},</span>
+    <span class="kw">function</span><span class="op">*</span>()<span class="op">{</span>
+        <span class="kw">var</span> p2 <span class="op">=</span> <span class="at">request</span>( <span class="st">&quot;http://some.url.2&quot;</span> )<span class="op">;</span>
+
+        <span class="co">// transfer control</span>
+        <span class="kw">yield</span><span class="op">;</span>
+
+        <span class="va">res</span>.<span class="at">push</span>( <span class="kw">yield</span> p2 )<span class="op">;</span>
+    <span class="op">}</span>
+)<span class="op">;</span></code></pre></div>
+<p><strong>Note:</strong> We’re not including a code listing for <code>runAll(..)</code> as it is not only long enough to bog down the text, but is an extension of the logic we’ve already implemented in <code>run(..)</code> earlier. So, as a good supplementary exercise for the reader, try your hand at evolving the code from <code>run(..)</code> to work like the imagined <code>runAll(..)</code>. Also, my <em>asynquence</em> library provides a previously mentioned <code>runner(..)</code> utility with this kind of capability already built in, and will be discussed in Appendix A of this book.</p>
+<p>Here’s how the processing inside <code>runAll(..)</code> would operate:</p>
+<ol style="list-style-type: decimal">
+<li>The first generator gets a promise for the first Ajax response from <code>&quot;http://some.url.1&quot;</code>, then <code>yield</code>s control back to the <code>runAll(..)</code> utility.</li>
+<li>The second generator runs and does the same for <code>&quot;http://some.url.2&quot;</code>, <code>yield</code>ing control back to the <code>runAll(..)</code> utility.</li>
+<li>The first generator resumes, and then <code>yield</code>s out its promise <code>p1</code>. The <code>runAll(..)</code> utility does the same in this case as our previous <code>run(..)</code>, in that it waits on that promise to resolve, then resumes the same generator (no control transfer!). When <code>p1</code> resolves, <code>runAll(..)</code> resumes the first generator again with that resolution value, and then <code>res[0]</code> is given its value. When the first generator then finishes, that’s an implicit transfer of control.</li>
+<li>The second generator resumes, <code>yield</code>s out its promise <code>p2</code>, and waits for it to resolve. Once it does, <code>runAll(..)</code> resumes the second generator with that value, and <code>res[1]</code> is set.</li>
+</ol>
+<p>In this running example, we use an outer variable called <code>res</code> to store the results of the two different Ajax responses – that’s our concurrency coordination making that possible.</p>
+<p>But it might be quite helpful to further extend <code>runAll(..)</code> to provide an inner variable space for the multiple generator instances to <em>share</em>, such as an empty object we’ll call <code>data</code> below. Also, it could take non-Promise values that are <code>yield</code>ed and hand them off to the next generator.</p>
+<p>Consider:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="co">// `request(..)` is a Promise-aware Ajax utility</span>
+
+<span class="at">runAll</span>(
+    <span class="kw">function</span><span class="op">*</span>(data)<span class="op">{</span>
+        <span class="va">data</span>.<span class="at">res</span> <span class="op">=</span> []<span class="op">;</span>
+
+        <span class="co">// transfer control (and message pass)</span>
+        <span class="kw">var</span> url1 <span class="op">=</span> <span class="kw">yield</span> <span class="st">&quot;http://some.url.2&quot;</span><span class="op">;</span>
+
+        <span class="kw">var</span> p1 <span class="op">=</span> <span class="at">request</span>( url1 )<span class="op">;</span> <span class="co">// &quot;http://some.url.1&quot;</span>
+
+        <span class="co">// transfer control</span>
+        <span class="kw">yield</span><span class="op">;</span>
+
+        <span class="va">data</span>.<span class="va">res</span>.<span class="at">push</span>( <span class="kw">yield</span> p1 )<span class="op">;</span>
+    <span class="op">},</span>
+    <span class="kw">function</span><span class="op">*</span>(data)<span class="op">{</span>
+        <span class="co">// transfer control (and message pass)</span>
+        <span class="kw">var</span> url2 <span class="op">=</span> <span class="kw">yield</span> <span class="st">&quot;http://some.url.1&quot;</span><span class="op">;</span>
+
+        <span class="kw">var</span> p2 <span class="op">=</span> <span class="at">request</span>( url2 )<span class="op">;</span> <span class="co">// &quot;http://some.url.2&quot;</span>
+
+        <span class="co">// transfer control</span>
+        <span class="kw">yield</span><span class="op">;</span>
+
+        <span class="va">data</span>.<span class="va">res</span>.<span class="at">push</span>( <span class="kw">yield</span> p2 )<span class="op">;</span>
+    <span class="op">}</span>
+)<span class="op">;</span></code></pre></div>
+<p>In this formulation, the two generators are not just coordinating control transfer, but actually communicating with each other, both through <code>data.res</code> and the <code>yield</code>ed messages that trade <code>url1</code> and <code>url2</code> values. That’s incredibly powerful!</p>
+<p>Such realization also serves as a conceptual base for a more sophisticated asynchrony technique called CSP (Communicating Sequential Processes), which we will cover in Appendix B of this book.</p>
+</div>
+<div id="thunks" class="section level2">
+<h2>Thunks</h2>
+<p>So far, we’ve made the assumption that <code>yield</code>ing a Promise from a generator – and having that Promise resume the generator via a helper utility like <code>run(..)</code> – was the best possible way to manage asynchrony with generators. To be clear, it is.</p>
+<p>But we skipped over another pattern that has some mildly widespread adoption, so in the interest of completeness we’ll take a brief look at it.</p>
+<p>In general computer science, there’s an old pre-JS concept called a “thunk.” Without getting bogged down in the historical nature, a narrow expression of a thunk in JS is a function that – without any parameters – is wired to call another function.</p>
+<p>In other words, you wrap a function definition around function call – with any parameters it needs – to <em>defer</em> the execution of that call, and that wrapping function is a thunk. When you later execute the thunk, you end up calling the original function.</p>
+<p>For example:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="kw">function</span> <span class="at">foo</span>(x<span class="op">,</span>y) <span class="op">{</span>
+    <span class="cf">return</span> x <span class="op">+</span> y<span class="op">;</span>
+<span class="op">}</span>
+
+<span class="kw">function</span> <span class="at">fooThunk</span>() <span class="op">{</span>
+    <span class="cf">return</span> <span class="at">foo</span>( <span class="dv">3</span><span class="op">,</span> <span class="dv">4</span> )<span class="op">;</span>
+<span class="op">}</span>
+
+<span class="co">// later</span>
+
+<span class="va">console</span>.<span class="at">log</span>( <span class="at">fooThunk</span>() )<span class="op">;</span>  <span class="co">// 7</span></code></pre></div>
+<p>So, a synchronous thunk is pretty straightforward. But what about an async thunk? We can essentially extend the narrow thunk definition to include it receiving a callback.</p>
+<p>Consider:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="kw">function</span> <span class="at">foo</span>(x<span class="op">,</span>y<span class="op">,</span>cb) <span class="op">{</span>
+    <span class="at">setTimeout</span>( <span class="kw">function</span>()<span class="op">{</span>
+        <span class="at">cb</span>( x <span class="op">+</span> y )<span class="op">;</span>
+    <span class="op">},</span> <span class="dv">1000</span> )<span class="op">;</span>
+<span class="op">}</span>
+
+<span class="kw">function</span> <span class="at">fooThunk</span>(cb) <span class="op">{</span>
+    <span class="at">foo</span>( <span class="dv">3</span><span class="op">,</span> <span class="dv">4</span><span class="op">,</span> cb )<span class="op">;</span>
+<span class="op">}</span>
+
+<span class="co">// later</span>
+
+<span class="at">fooThunk</span>( <span class="kw">function</span>(sum)<span class="op">{</span>
+    <span class="va">console</span>.<span class="at">log</span>( sum )<span class="op">;</span>     <span class="co">// 7</span>
+<span class="op">}</span> )<span class="op">;</span></code></pre></div>
+<p>As you can see, <code>fooThunk(..)</code> only expects a <code>cb(..)</code> parameter, as it already has values <code>3</code> and <code>4</code> (for <code>x</code> and <code>y</code>, respectively) pre-specified and ready to pass to <code>foo(..)</code>. A thunk is just waiting around patiently for the last piece it needs to do its job: the callback.</p>
+<p>You don’t want to make thunks manually, though. So, let’s invent a utility that does this wrapping for us.</p>
+<p>Consider:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="kw">function</span> <span class="at">thunkify</span>(fn) <span class="op">{</span>
+    <span class="kw">var</span> args <span class="op">=</span> [].<span class="va">slice</span>.<span class="at">call</span>( arguments<span class="op">,</span> <span class="dv">1</span> )<span class="op">;</span>
+    <span class="cf">return</span> <span class="kw">function</span>(cb) <span class="op">{</span>
+        <span class="va">args</span>.<span class="at">push</span>( cb )<span class="op">;</span>
+        <span class="cf">return</span> <span class="va">fn</span>.<span class="at">apply</span>( <span class="kw">null</span><span class="op">,</span> args )<span class="op">;</span>
+    <span class="op">};</span>
+<span class="op">}</span>
+
+<span class="kw">var</span> fooThunk <span class="op">=</span> <span class="at">thunkify</span>( foo<span class="op">,</span> <span class="dv">3</span><span class="op">,</span> <span class="dv">4</span> )<span class="op">;</span>
+
+<span class="co">// later</span>
+
+<span class="at">fooThunk</span>( <span class="kw">function</span>(sum) <span class="op">{</span>
+    <span class="va">console</span>.<span class="at">log</span>( sum )<span class="op">;</span>     <span class="co">// 7</span>
+<span class="op">}</span> )<span class="op">;</span></code></pre></div>
+<p><strong>Tip:</strong> Here we assume that the original (<code>foo(..)</code>) function signature expects its callback in the last position, with any other parameters coming before it. This is a pretty ubiquitous “standard” for async JS function standards. You might call it “callback-last style.” If for some reason you had a need to handle “callback-first style” signatures, you would just make a utility that used <code>args.unshift(..)</code> instead of <code>args.push(..)</code>.</p>
+<p>The preceding formulation of <code>thunkify(..)</code> takes both the <code>foo(..)</code> function reference, and any parameters it needs, and returns back the thunk itself (<code>fooThunk(..)</code>). However, that’s not the typical approach you’ll find to thunks in JS.</p>
+<p>Instead of <code>thunkify(..)</code> making the thunk itself, typically – if not perplexingly – the <code>thunkify(..)</code> utility would produce a function that produces thunks.</p>
+<p>Uhhhh… yeah.</p>
+<p>Consider:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="kw">function</span> <span class="at">thunkify</span>(fn) <span class="op">{</span>
+    <span class="cf">return</span> <span class="kw">function</span>() <span class="op">{</span>
+        <span class="kw">var</span> args <span class="op">=</span> [].<span class="va">slice</span>.<span class="at">call</span>( arguments )<span class="op">;</span>
+        <span class="cf">return</span> <span class="kw">function</span>(cb) <span class="op">{</span>
+            <span class="va">args</span>.<span class="at">push</span>( cb )<span class="op">;</span>
+            <span class="cf">return</span> <span class="va">fn</span>.<span class="at">apply</span>( <span class="kw">null</span><span class="op">,</span> args )<span class="op">;</span>
+        <span class="op">};</span>
+    <span class="op">};</span>
+<span class="op">}</span></code></pre></div>
+<p>The main difference here is the extra <code>return function() { .. }</code> layer. Here’s how its usage differs:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="kw">var</span> whatIsThis <span class="op">=</span> <span class="at">thunkify</span>( foo )<span class="op">;</span>
+
+<span class="kw">var</span> fooThunk <span class="op">=</span> <span class="at">whatIsThis</span>( <span class="dv">3</span><span class="op">,</span> <span class="dv">4</span> )<span class="op">;</span>
+
+<span class="co">// later</span>
+
+<span class="at">fooThunk</span>( <span class="kw">function</span>(sum) <span class="op">{</span>
+    <span class="va">console</span>.<span class="at">log</span>( sum )<span class="op">;</span>     <span class="co">// 7</span>
+<span class="op">}</span> )<span class="op">;</span></code></pre></div>
+<p>Obviously, the big question this snippet implies is what is <code>whatIsThis</code> properly called? It’s not the thunk, it’s the thing that will produce thunks from <code>foo(..)</code> calls. It’s kind of like a “factory” for “thunks.” There doesn’t seem to be any kind of standard agreement for naming such a thing.</p>
+<p>So, my proposal is “thunkory” (“thunk” + “factory”). So, <code>thunkify(..)</code> produces a thunkory, and a thunkory produces thunks. That reasoning is symmetric to my proposal for “promisory” in Chapter 3:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="kw">var</span> fooThunkory <span class="op">=</span> <span class="at">thunkify</span>( foo )<span class="op">;</span>
+
+<span class="kw">var</span> fooThunk1 <span class="op">=</span> <span class="at">fooThunkory</span>( <span class="dv">3</span><span class="op">,</span> <span class="dv">4</span> )<span class="op">;</span>
+<span class="kw">var</span> fooThunk2 <span class="op">=</span> <span class="at">fooThunkory</span>( <span class="dv">5</span><span class="op">,</span> <span class="dv">6</span> )<span class="op">;</span>
+
+<span class="co">// later</span>
+
+<span class="at">fooThunk1</span>( <span class="kw">function</span>(sum) <span class="op">{</span>
+    <span class="va">console</span>.<span class="at">log</span>( sum )<span class="op">;</span>     <span class="co">// 7</span>
+<span class="op">}</span> )<span class="op">;</span>
+
+<span class="at">fooThunk2</span>( <span class="kw">function</span>(sum) <span class="op">{</span>
+    <span class="va">console</span>.<span class="at">log</span>( sum )<span class="op">;</span>     <span class="co">// 11</span>
+<span class="op">}</span> )<span class="op">;</span></code></pre></div>
+<p><strong>Note:</strong> The running <code>foo(..)</code> example expects a style of callback that’s not “error-first style.” Of course, “error-first style” is much more common. If <code>foo(..)</code> had some sort of legitimate error-producing expectation, we could change it to expect and use an error-first callback. None of the subsequent <code>thunkify(..)</code> machinery cares what style of callback is assumed. The only difference in usage would be <code>fooThunk1(function(err,sum){..</code>.</p>
+<p>Exposing the thunkory method – instead of how the earlier <code>thunkify(..)</code> hides this intermediary step – may seem like unnecessary complication. But in general, it’s quite useful to make thunkories at the beginning of your program to wrap existing API methods, and then be able to pass around and call those thunkories when you need thunks. The two distinct steps preserve a cleaner separation of capability.</p>
+<p>To illustrate:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="co">// cleaner:</span>
+<span class="kw">var</span> fooThunkory <span class="op">=</span> <span class="at">thunkify</span>( foo )<span class="op">;</span>
+
+<span class="kw">var</span> fooThunk1 <span class="op">=</span> <span class="at">fooThunkory</span>( <span class="dv">3</span><span class="op">,</span> <span class="dv">4</span> )<span class="op">;</span>
+<span class="kw">var</span> fooThunk2 <span class="op">=</span> <span class="at">fooThunkory</span>( <span class="dv">5</span><span class="op">,</span> <span class="dv">6</span> )<span class="op">;</span>
+
+<span class="co">// instead of:</span>
+<span class="kw">var</span> fooThunk1 <span class="op">=</span> <span class="at">thunkify</span>( foo<span class="op">,</span> <span class="dv">3</span><span class="op">,</span> <span class="dv">4</span> )<span class="op">;</span>
+<span class="kw">var</span> fooThunk2 <span class="op">=</span> <span class="at">thunkify</span>( foo<span class="op">,</span> <span class="dv">5</span><span class="op">,</span> <span class="dv">6</span> )<span class="op">;</span></code></pre></div>
+<p>Regardless of whether you like to deal with the thunkories explicitly or not, the usage of thunks <code>fooThunk1(..)</code> and <code>fooThunk2(..)</code> remains the same.</p>
+<div id="spromisethunk" class="section level3">
+<h3>s/promise/thunk/</h3>
+<p>So what’s all this thunk stuff have to do with generators?</p>
+<p>Comparing thunks to promises generally: they’re not directly interchangable as they’re not equivalent in behavior. Promises are vastly more capable and trustable than bare thunks.</p>
+<p>But in another sense, they both can be seen as a request for a value, which may be async in its answering.</p>
+<p>Recall from Chapter 3 we defined a utility for promisifying a function, which we called <code>Promise.wrap(..)</code> – we could have called it <code>promisify(..)</code>, too! This Promise-wrapping utility doesn’t produce Promises; it produces promisories that in turn produce Promises. This is completely symmetric to the thunkories and thunks presently being discussed.</p>
+<p>To illustrate the symmetry, let’s first alter the running <code>foo(..)</code> example from earlier to assume an “error-first style” callback:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="kw">function</span> <span class="at">foo</span>(x<span class="op">,</span>y<span class="op">,</span>cb) <span class="op">{</span>
+    <span class="at">setTimeout</span>( <span class="kw">function</span>()<span class="op">{</span>
+        <span class="co">// assume `cb(..)` as &quot;error-first style&quot;</span>
+        <span class="at">cb</span>( <span class="kw">null</span><span class="op">,</span> x <span class="op">+</span> y )<span class="op">;</span>
+    <span class="op">},</span> <span class="dv">1000</span> )<span class="op">;</span>
+<span class="op">}</span></code></pre></div>
+<p>Now, we’ll compare using <code>thunkify(..)</code> and <code>promisify(..)</code> (aka <code>Promise.wrap(..)</code> from Chapter 3):</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="co">// symmetrical: constructing the question asker</span>
+<span class="kw">var</span> fooThunkory <span class="op">=</span> <span class="at">thunkify</span>( foo )<span class="op">;</span>
+<span class="kw">var</span> fooPromisory <span class="op">=</span> <span class="at">promisify</span>( foo )<span class="op">;</span>
+
+<span class="co">// symmetrical: asking the question</span>
+<span class="kw">var</span> fooThunk <span class="op">=</span> <span class="at">fooThunkory</span>( <span class="dv">3</span><span class="op">,</span> <span class="dv">4</span> )<span class="op">;</span>
+<span class="kw">var</span> fooPromise <span class="op">=</span> <span class="at">fooPromisory</span>( <span class="dv">3</span><span class="op">,</span> <span class="dv">4</span> )<span class="op">;</span>
+
+<span class="co">// get the thunk answer</span>
+<span class="at">fooThunk</span>( <span class="kw">function</span>(err<span class="op">,</span>sum)<span class="op">{</span>
+    <span class="cf">if</span> (err) <span class="op">{</span>
+        <span class="va">console</span>.<span class="at">error</span>( err )<span class="op">;</span>
+    <span class="op">}</span>
+    <span class="cf">else</span> <span class="op">{</span>
+        <span class="va">console</span>.<span class="at">log</span>( sum )<span class="op">;</span>     <span class="co">// 7</span>
+    <span class="op">}</span>
+<span class="op">}</span> )<span class="op">;</span>
+
+<span class="co">// get the promise answer</span>
+fooPromise
+.<span class="at">then</span>(
+    <span class="kw">function</span>(sum)<span class="op">{</span>
+        <span class="va">console</span>.<span class="at">log</span>( sum )<span class="op">;</span>     <span class="co">// 7</span>
+    <span class="op">},</span>
+    <span class="kw">function</span>(err)<span class="op">{</span>
+        <span class="va">console</span>.<span class="at">error</span>( err )<span class="op">;</span>
+    <span class="op">}</span>
+)<span class="op">;</span></code></pre></div>
+<p>Both the thunkory and the promisory are essentially asking a question (for a value), and respectively the thunk <code>fooThunk</code> and promise <code>fooPromise</code> represent the future answers to that question. Presented in that light, the symmetry is clear.</p>
+<p>With that perspective in mind, we can see that generators which <code>yield</code> Promises for asynchrony could instead <code>yield</code> thunks for asynchrony. All we’d need is a smarter <code>run(..)</code> utility (like from before) that can not only look for and wire up to a <code>yield</code>ed Promise but also to provide a callback to a <code>yield</code>ed thunk.</p>
+<p>Consider:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="kw">function</span> <span class="op">*</span><span class="at">foo</span>() <span class="op">{</span>
+    <span class="kw">var</span> val <span class="op">=</span> <span class="kw">yield</span> <span class="at">request</span>( <span class="st">&quot;http://some.url.1&quot;</span> )<span class="op">;</span>
+    <span class="va">console</span>.<span class="at">log</span>( val )<span class="op">;</span>
+<span class="op">}</span>
+
+<span class="at">run</span>( foo )<span class="op">;</span></code></pre></div>
+<p>In this example, <code>request(..)</code> could either be a promisory that returns a promise, or a thunkory that returns a thunk. From the perspective of what’s going on inside the generator code logic, we don’t care about that implementation detail, which is quite powerful!</p>
+<p>So, <code>request(..)</code> could be either:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="co">// promisory `request(..)` (see Chapter 3)</span>
+<span class="kw">var</span> request <span class="op">=</span> <span class="va">Promise</span>.<span class="at">wrap</span>( ajax )<span class="op">;</span>
+
+<span class="co">// vs.</span>
+
+<span class="co">// thunkory `request(..)`</span>
+<span class="kw">var</span> request <span class="op">=</span> <span class="at">thunkify</span>( ajax )<span class="op">;</span></code></pre></div>
+<p>Finally, as a thunk-aware patch to our earlier <code>run(..)</code> utility, we would need logic like this:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="co">// ..</span>
+<span class="co">// did we receive a thunk back?</span>
+<span class="cf">else</span> <span class="cf">if</span> (<span class="kw">typeof</span> <span class="va">next</span>.<span class="at">value</span> <span class="op">==</span> <span class="st">&quot;function&quot;</span>) <span class="op">{</span>
+    <span class="cf">return</span> <span class="kw">new</span> <span class="at">Promise</span>( <span class="kw">function</span>(resolve<span class="op">,</span>reject)<span class="op">{</span>
+        <span class="co">// call the thunk with an error-first callback</span>
+        <span class="va">next</span>.<span class="at">value</span>( <span class="kw">function</span>(err<span class="op">,</span>msg) <span class="op">{</span>
+            <span class="cf">if</span> (err) <span class="op">{</span>
+                <span class="at">reject</span>( err )<span class="op">;</span>
+            <span class="op">}</span>
+            <span class="cf">else</span> <span class="op">{</span>
+                <span class="at">resolve</span>( msg )<span class="op">;</span>
+            <span class="op">}</span>
+        <span class="op">}</span> )<span class="op">;</span>
+    <span class="op">}</span> )
+    .<span class="at">then</span>(
+        handleNext<span class="op">,</span>
+        <span class="kw">function</span> <span class="at">handleErr</span>(err) <span class="op">{</span>
+            <span class="cf">return</span> <span class="va">Promise</span>.<span class="at">resolve</span>(
+                <span class="va">it</span>.<span class="at">throw</span>( err )
+            )
+            .<span class="at">then</span>( handleResult )<span class="op">;</span>
+        <span class="op">}</span>
+    )<span class="op">;</span>
+<span class="op">}</span></code></pre></div>
+<p>Now, our generators can either call promisories to <code>yield</code> Promises, or call thunkories to <code>yield</code> thunks, and in either case, <code>run(..)</code> would handle that value and use it to wait for the completion to resume the generator.</p>
+<p>Symmetry wise, these two approaches look identical. However, we should point out that’s true only from the perspective of Promises or thunks representing the future value continuation of a generator.</p>
+<p>From the larger perspective, thunks do not in and of themselves have hardly any of the trustability or composability guarantees that Promises are designed with. Using a thunk as a stand-in for a Promise in this particular generator asynchrony pattern is workable but should be seen as less than ideal when compared to all the benefits that Promises offer (see Chapter 3).</p>
+<p>If you have the option, prefer <code>yield pr</code> rather than <code>yield th</code>. But there’s nothing wrong with having a <code>run(..)</code> utility which can handle both value types.</p>
+<p><strong>Note:</strong> The <code>runner(..)</code> utility in my <em>asynquence</em> library, which will be discussed in Appendix A, handles <code>yield</code>s of Promises, thunks and <em>asynquence</em> sequences.</p>
+</div>
+</div>
+<div id="pre-es6-generators" class="section level2">
+<h2>Pre-ES6 Generators</h2>
+<p>You’re hopefully convinced now that generators are a very important addition to the async programming toolbox. But it’s a new syntax in ES6, which means you can’t just polyfill generators like you can Promises (which are just a new API). So what can we do to bring generators to our browser JS if we don’t have the luxury of ignoring pre-ES6 browsers?</p>
+<p>For all new syntax extensions in ES6, there are tools – the most common term for them is transpilers, for trans-compilers – which can take your ES6 syntax and transform it into equivalent (but obviously uglier!) pre-ES6 code. So, generators can be transpiled into code that will have the same behavior but work in ES5 and below.</p>
+<p>But how? The “magic” of <code>yield</code> doesn’t obviously sound like code that’s easy to transpile. We actually hinted at a solution in our earlier discussion of closure-based <em>iterators</em>.</p>
+<div id="manual-transformation" class="section level3">
+<h3>Manual Transformation</h3>
+<p>Before we discuss the transpilers, let’s derive how manual transpilation would work in the case of generators. This isn’t just an academic exercise, because doing so will actually help further reinforce how they work.</p>
+<p>Consider:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="co">// `request(..)` is a Promise-aware Ajax utility</span>
+
+<span class="kw">function</span> <span class="op">*</span><span class="at">foo</span>(url) <span class="op">{</span>
+    <span class="cf">try</span> <span class="op">{</span>
+        <span class="va">console</span>.<span class="at">log</span>( <span class="st">&quot;requesting:&quot;</span><span class="op">,</span> url )<span class="op">;</span>
+        <span class="kw">var</span> val <span class="op">=</span> <span class="kw">yield</span> <span class="at">request</span>( url )<span class="op">;</span>
+        <span class="va">console</span>.<span class="at">log</span>( val )<span class="op">;</span>
+    <span class="op">}</span>
+    <span class="cf">catch</span> (err) <span class="op">{</span>
+        <span class="va">console</span>.<span class="at">log</span>( <span class="st">&quot;Oops:&quot;</span><span class="op">,</span> err )<span class="op">;</span>
+        <span class="cf">return</span> <span class="kw">false</span><span class="op">;</span>
+    <span class="op">}</span>
+<span class="op">}</span>
+
+<span class="kw">var</span> it <span class="op">=</span> <span class="at">foo</span>( <span class="st">&quot;http://some.url.1&quot;</span> )<span class="op">;</span></code></pre></div>
+<p>The first thing to observe is that we’ll still need a normal <code>foo()</code> function that can be called, and it will still need to return an <em>iterator</em>. So, let’s sketch out the non-generator transformation:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="kw">function</span> <span class="at">foo</span>(url) <span class="op">{</span>
+
+    <span class="co">// ..</span>
+
+    <span class="co">// make and return an iterator</span>
+    <span class="cf">return</span> <span class="op">{</span>
+        <span class="dt">next</span><span class="op">:</span> <span class="kw">function</span>(v) <span class="op">{</span>
+            <span class="co">// ..</span>
+        <span class="op">},</span>
+        <span class="dt">throw</span><span class="op">:</span> <span class="kw">function</span>(e) <span class="op">{</span>
+            <span class="co">// ..</span>
+        <span class="op">}</span>
+    <span class="op">};</span>
+<span class="op">}</span>
+
+<span class="kw">var</span> it <span class="op">=</span> <span class="at">foo</span>( <span class="st">&quot;http://some.url.1&quot;</span> )<span class="op">;</span></code></pre></div>
+<p>The next thing to observe is that a generator does its “magic” by suspending its scope/state, but we can emulate that with function closure (see the <em>Scope &amp; Closures</em> title of this series). To understand how to write such code, we’ll first annotate different parts of our generator with state values:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="co">// `request(..)` is a Promise-aware Ajax utility</span>
+
+<span class="kw">function</span> <span class="op">*</span><span class="at">foo</span>(url) <span class="op">{</span>
+    <span class="co">// STATE *1*</span>
+
+    <span class="cf">try</span> <span class="op">{</span>
+        <span class="va">console</span>.<span class="at">log</span>( <span class="st">&quot;requesting:&quot;</span><span class="op">,</span> url )<span class="op">;</span>
+        <span class="kw">var</span> TMP1 <span class="op">=</span> <span class="at">request</span>( url )<span class="op">;</span>
+
+        <span class="co">// STATE *2*</span>
+        <span class="kw">var</span> val <span class="op">=</span> <span class="kw">yield</span> TMP1<span class="op">;</span>
+        <span class="va">console</span>.<span class="at">log</span>( val )<span class="op">;</span>
+    <span class="op">}</span>
+    <span class="cf">catch</span> (err) <span class="op">{</span>
+        <span class="co">// STATE *3*</span>
+        <span class="va">console</span>.<span class="at">log</span>( <span class="st">&quot;Oops:&quot;</span><span class="op">,</span> err )<span class="op">;</span>
+        <span class="cf">return</span> <span class="kw">false</span><span class="op">;</span>
+    <span class="op">}</span>
+<span class="op">}</span></code></pre></div>
+<p><strong>Note:</strong> For more accurate illustration, we split up the <code>val = yield request..</code> statement into two parts, using the temporary <code>TMP1</code> variable. <code>request(..)</code> happens in state <code>*1*</code>, and the assignment of its completion value to <code>val</code> happens in state <code>*2*</code>. We’ll get rid of that intermediate <code>TMP1</code> when we convert the code to its non-generator equivalent.</p>
+<p>In other words, <code>*1*</code> is the beginning state, <code>*2*</code> is the state if the <code>request(..)</code> succeeds, and <code>*3*</code> is the state if the <code>request(..)</code> fails. You can probably imagine how any extra <code>yield</code> steps would just be encoded as extra states.</p>
+<p>Back to our transpiled generator, let’s define a variable <code>state</code> in the closure we can use to keep track of the state:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="kw">function</span> <span class="at">foo</span>(url) <span class="op">{</span>
+    <span class="co">// manage generator state</span>
+    <span class="kw">var</span> state<span class="op">;</span>
+
+    <span class="co">// ..</span>
+<span class="op">}</span></code></pre></div>
+<p>Now, let’s define an inner function called <code>process(..)</code> inside the closure which handles each state, using a <code>switch</code> statement:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="co">// `request(..)` is a Promise-aware Ajax utility</span>
+
+<span class="kw">function</span> <span class="at">foo</span>(url) <span class="op">{</span>
+    <span class="co">// manage generator state</span>
+    <span class="kw">var</span> state<span class="op">;</span>
+
+    <span class="co">// generator-wide variable declarations</span>
+    <span class="kw">var</span> val<span class="op">;</span>
+
+    <span class="kw">function</span> <span class="at">process</span>(v) <span class="op">{</span>
+        <span class="cf">switch</span> (state) <span class="op">{</span>
+            <span class="cf">case</span> <span class="dv">1</span><span class="op">:</span>
+                <span class="va">console</span>.<span class="at">log</span>( <span class="st">&quot;requesting:&quot;</span><span class="op">,</span> url )<span class="op">;</span>
+                <span class="cf">return</span> <span class="at">request</span>( url )<span class="op">;</span>
+            <span class="cf">case</span> <span class="dv">2</span><span class="op">:</span>
+                val <span class="op">=</span> v<span class="op">;</span>
+                <span class="va">console</span>.<span class="at">log</span>( val )<span class="op">;</span>
+                <span class="cf">return</span><span class="op">;</span>
+            <span class="cf">case</span> <span class="dv">3</span><span class="op">:</span>
+                <span class="kw">var</span> err <span class="op">=</span> v<span class="op">;</span>
+                <span class="va">console</span>.<span class="at">log</span>( <span class="st">&quot;Oops:&quot;</span><span class="op">,</span> err )<span class="op">;</span>
+                <span class="cf">return</span> <span class="kw">false</span><span class="op">;</span>
+        <span class="op">}</span>
+    <span class="op">}</span>
+
+    <span class="co">// ..</span>
+<span class="op">}</span></code></pre></div>
+<p>Each state in our generator is represented by its own <code>case</code> in the <code>switch</code> statement. <code>process(..)</code> will be called each time we need to process a new state. We’ll come back to how that works in just a moment.</p>
+<p>For any generator-wide variable declarations (<code>val</code>), we move those to a <code>var</code> declaration outside of <code>process(..)</code> so they can survive multiple calls to <code>process(..)</code>. But the “block scoped” <code>err</code> variable is only needed for the <code>*3*</code> state, so we leave it in place.</p>
+<p>In state <code>*1*</code>, instead of <code>yield request(..)</code>, we did <code>return request(..)</code>. In terminal state <code>*2*</code>, there was no explicit <code>return</code>, so we just do a <code>return;</code> which is the same as <code>return undefined</code>. In terminal state <code>*3*</code>, there was a <code>return false</code>, so we preserve that.</p>
+<p>Now we need to define the code in the <em>iterator</em> functions so they call <code>process(..)</code> appropriately:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="kw">function</span> <span class="at">foo</span>(url) <span class="op">{</span>
+    <span class="co">// manage generator state</span>
+    <span class="kw">var</span> state<span class="op">;</span>
+
+    <span class="co">// generator-wide variable declarations</span>
+    <span class="kw">var</span> val<span class="op">;</span>
+
+    <span class="kw">function</span> <span class="at">process</span>(v) <span class="op">{</span>
+        <span class="cf">switch</span> (state) <span class="op">{</span>
+            <span class="cf">case</span> <span class="dv">1</span><span class="op">:</span>
+                <span class="va">console</span>.<span class="at">log</span>( <span class="st">&quot;requesting:&quot;</span><span class="op">,</span> url )<span class="op">;</span>
+                <span class="cf">return</span> <span class="at">request</span>( url )<span class="op">;</span>
+            <span class="cf">case</span> <span class="dv">2</span><span class="op">:</span>
+                val <span class="op">=</span> v<span class="op">;</span>
+                <span class="va">console</span>.<span class="at">log</span>( val )<span class="op">;</span>
+                <span class="cf">return</span><span class="op">;</span>
+            <span class="cf">case</span> <span class="dv">3</span><span class="op">:</span>
+                <span class="kw">var</span> err <span class="op">=</span> v<span class="op">;</span>
+                <span class="va">console</span>.<span class="at">log</span>( <span class="st">&quot;Oops:&quot;</span><span class="op">,</span> err )<span class="op">;</span>
+                <span class="cf">return</span> <span class="kw">false</span><span class="op">;</span>
+        <span class="op">}</span>
+    <span class="op">}</span>
+
+    <span class="co">// make and return an iterator</span>
+    <span class="cf">return</span> <span class="op">{</span>
+        <span class="dt">next</span><span class="op">:</span> <span class="kw">function</span>(v) <span class="op">{</span>
+            <span class="co">// initial state</span>
+            <span class="cf">if</span> (<span class="op">!</span>state) <span class="op">{</span>
+                state <span class="op">=</span> <span class="dv">1</span><span class="op">;</span>
+                <span class="cf">return</span> <span class="op">{</span>
+                    <span class="dt">done</span><span class="op">:</span> <span class="kw">false</span><span class="op">,</span>
+                    <span class="dt">value</span><span class="op">:</span> <span class="at">process</span>()
+                <span class="op">};</span>
+            <span class="op">}</span>
+            <span class="co">// yield resumed successfully</span>
+            <span class="cf">else</span> <span class="cf">if</span> (state <span class="op">==</span> <span class="dv">1</span>) <span class="op">{</span>
+                state <span class="op">=</span> <span class="dv">2</span><span class="op">;</span>
+                <span class="cf">return</span> <span class="op">{</span>
+                    <span class="dt">done</span><span class="op">:</span> <span class="kw">true</span><span class="op">,</span>
+                    <span class="dt">value</span><span class="op">:</span> <span class="at">process</span>( v )
+                <span class="op">};</span>
+            <span class="op">}</span>
+            <span class="co">// generator already completed</span>
+            <span class="cf">else</span> <span class="op">{</span>
+                <span class="cf">return</span> <span class="op">{</span>
+                    <span class="dt">done</span><span class="op">:</span> <span class="kw">true</span><span class="op">,</span>
+                    <span class="dt">value</span><span class="op">:</span> <span class="kw">undefined</span>
+                <span class="op">};</span>
+            <span class="op">}</span>
+        <span class="op">},</span>
+        <span class="st">&quot;throw&quot;</span><span class="op">:</span> <span class="kw">function</span>(e) <span class="op">{</span>
+            <span class="co">// the only explicit error handling is in</span>
+            <span class="co">// state *1*</span>
+            <span class="cf">if</span> (state <span class="op">==</span> <span class="dv">1</span>) <span class="op">{</span>
+                state <span class="op">=</span> <span class="dv">3</span><span class="op">;</span>
+                <span class="cf">return</span> <span class="op">{</span>
+                    <span class="dt">done</span><span class="op">:</span> <span class="kw">true</span><span class="op">,</span>
+                    <span class="dt">value</span><span class="op">:</span> <span class="at">process</span>( e )
+                <span class="op">};</span>
+            <span class="op">}</span>
+            <span class="co">// otherwise, an error won&#39;t be handled,</span>
+            <span class="co">// so just throw it right back out</span>
+            <span class="cf">else</span> <span class="op">{</span>
+                <span class="cf">throw</span> e<span class="op">;</span>
+            <span class="op">}</span>
+        <span class="op">}</span>
+    <span class="op">};</span>
+<span class="op">}</span></code></pre></div>
+<p>How does this code work?</p>
+<ol style="list-style-type: decimal">
+<li>The first call to the <em>iterator</em>’s <code>next()</code> call would move the generator from the uninitialized state to state <code>1</code>, and then call <code>process()</code> to handle that state. The return value from <code>request(..)</code>, which is the promise for the Ajax response, is returned back as the <code>value</code> property from the <code>next()</code> call.</li>
+<li>If the Ajax request succeeds, the second call to <code>next(..)</code> should send in the Ajax response value, which moves our state to <code>2</code>. <code>process(..)</code> is again called (this time with the passed in Ajax response value), and the <code>value</code> property returned from <code>next(..)</code> will be <code>undefined</code>.</li>
+<li>However, if the Ajax request fails, <code>throw(..)</code> should be called with the error, which would move the state from <code>1</code> to <code>3</code> (instead of <code>2</code>). Again <code>process(..)</code> is called, this time with the error value. That <code>case</code> returns <code>false</code>, which is set as the <code>value</code> property returned from the <code>throw(..)</code> call.</li>
+</ol>
+<p>From the outside – that is, interacting only with the <em>iterator</em> – this <code>foo(..)</code> normal function works pretty much the same as the <code>*foo(..)</code> generator would have worked. So we’ve effectively “transpiled” our ES6 generator to pre-ES6 compatibility!</p>
+<p>We could then manually instantiate our generator and control its iterator – calling <code>var it = foo(&quot;..&quot;)</code> and <code>it.next(..)</code> and such – or better, we could pass it to our previously defined <code>run(..)</code> utility as <code>run(foo,&quot;..&quot;)</code>.</p>
+</div>
+<div id="automatic-transpilation" class="section level3">
+<h3>Automatic Transpilation</h3>
+<p>The preceding exercise of manually deriving a transformation of our ES6 generator to pre-ES6 equivalent teaches us how generators work conceptually. But that transformation was really intricate and very non-portable to other generators in our code. It would be quite impractical to do this work by hand, and would completely obviate all the benefit of generators.</p>
+<p>But luckily, several tools already exist that can automatically convert ES6 generators to things like what we derived in the previous section. Not only do they do the heavy lifting work for us, but they also handle several complications that we glossed over.</p>
+<p>One such tool is regenerator (https://facebook.github.io/regenerator/), from the smart folks at Facebook.</p>
+<p>If we use regenerator to transpile our previous generator, here’s the code produced (at the time of this writing):</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="co">// `request(..)` is a Promise-aware Ajax utility</span>
+
+<span class="kw">var</span> foo <span class="op">=</span> <span class="va">regeneratorRuntime</span>.<span class="at">mark</span>(<span class="kw">function</span> <span class="at">foo</span>(url) <span class="op">{</span>
+    <span class="kw">var</span> val<span class="op">;</span>
+
+    <span class="cf">return</span> <span class="va">regeneratorRuntime</span>.<span class="at">wrap</span>(<span class="kw">function</span> <span class="at">foo$</span>(context$1$0) <span class="op">{</span>
+        <span class="cf">while</span> (<span class="dv">1</span>) <span class="cf">switch</span> (<span class="va">context$1$0</span>.<span class="at">prev</span> <span class="op">=</span> <span class="va">context$1$0</span>.<span class="at">next</span>) <span class="op">{</span>
+        <span class="cf">case</span> <span class="dv">0</span><span class="op">:</span>
+            <span class="va">context$1$0</span>.<span class="at">prev</span> <span class="op">=</span> <span class="dv">0</span><span class="op">;</span>
+            <span class="va">console</span>.<span class="at">log</span>( <span class="st">&quot;requesting:&quot;</span><span class="op">,</span> url )<span class="op">;</span>
+            <span class="va">context$1$0</span>.<span class="at">next</span> <span class="op">=</span> <span class="dv">4</span><span class="op">;</span>
+            <span class="cf">return</span> <span class="at">request</span>( url )<span class="op">;</span>
+        <span class="cf">case</span> <span class="dv">4</span><span class="op">:</span>
+            val <span class="op">=</span> <span class="va">context$1$0</span>.<span class="at">sent</span><span class="op">;</span>
+            <span class="va">console</span>.<span class="at">log</span>( val )<span class="op">;</span>
+            <span class="va">context$1$0</span>.<span class="at">next</span> <span class="op">=</span> <span class="dv">12</span><span class="op">;</span>
+            <span class="cf">break</span><span class="op">;</span>
+        <span class="cf">case</span> <span class="dv">8</span><span class="op">:</span>
+            <span class="va">context$1$0</span>.<span class="at">prev</span> <span class="op">=</span> <span class="dv">8</span><span class="op">;</span>
+            <span class="va">context$1$0</span>.<span class="at">t0</span> <span class="op">=</span> <span class="va">context$1$0</span>.<span class="at">catch</span>(<span class="dv">0</span>)<span class="op">;</span>
+            <span class="va">console</span>.<span class="at">log</span>(<span class="st">&quot;Oops:&quot;</span><span class="op">,</span> <span class="va">context$1$0</span>.<span class="at">t0</span>)<span class="op">;</span>
+            <span class="cf">return</span> <span class="va">context$1$0</span>.<span class="at">abrupt</span>(<span class="st">&quot;return&quot;</span><span class="op">,</span> <span class="kw">false</span>)<span class="op">;</span>
+        <span class="cf">case</span> <span class="dv">12</span><span class="op">:</span>
+        <span class="cf">case</span> <span class="st">&quot;end&quot;</span><span class="op">:</span>
+            <span class="cf">return</span> <span class="va">context$1$0</span>.<span class="at">stop</span>()<span class="op">;</span>
+        <span class="op">}</span>
+    <span class="op">},</span> foo<span class="op">,</span> <span class="kw">this</span><span class="op">,</span> [[<span class="dv">0</span><span class="op">,</span> <span class="dv">8</span>]])<span class="op">;</span>
+<span class="op">}</span>)<span class="op">;</span></code></pre></div>
+<p>There’s some obvious similarities here to our manual derivation, such as the <code>switch</code> / <code>case</code> statements, and we even see <code>val</code> pulled out of the closure just as we did.</p>
+<p>Of course, one trade-off is that regenerator’s transpilation requires a helper library <code>regeneratorRuntime</code> that holds all the reusable logic for managing a general generator / <em>iterator</em>. A lot of that boilerplate looks different than our version, but even then, the concepts can be seen, like with <code>context$1$0.next = 4</code> keeping track of the next state for the generator.</p>
+<p>The main takeaway is that generators are not restricted to only being useful in ES6+ environments. Once you understand the concepts, you can employ them throughout your code, and use tools to transform the code to be compatible with older environments.</p>
+<p>This is more work than just using a <code>Promise</code> API polyfill for pre-ES6 Promises, but the effort is totally worth it, because generators are so much better at expressing async flow control in a reason-able, sensible, synchronous-looking, sequential fashion.</p>
+<p>Once you get hooked on generators, you’ll never want to go back to the hell of async spaghetti callbacks!</p>
+</div>
+</div>
+<div id="review-3" class="section level2">
+<h2>Review</h2>
+<p>Generators are a new ES6 function type that does not run-to-completion like normal functions. Instead, the generator can be paused in mid-completion (entirely preserving its state), and it can later be resumed from where it left off.</p>
+<p>This pause/resume interchange is cooperative rather than preemptive, which means that the generator has the sole capability to pause itself, using the <code>yield</code> keyword, and yet the <em>iterator</em> that controls the generator has the sole capability (via <code>next(..)</code>) to resume the generator.</p>
+<p>The <code>yield</code> / <code>next(..)</code> duality is not just a control mechanism, it’s actually a two-way message passing mechanism. A <code>yield ..</code> expression essentially pauses waiting for a value, and the next <code>next(..)</code> call passes a value (or implicit <code>undefined</code>) back to that paused <code>yield</code> expression.</p>
+<p>The key benefit of generators related to async flow control is that the code inside a generator expresses a sequence of steps for the task in a naturally sync/sequential fashion. The trick is that we essentially hide potential asynchrony behind the <code>yield</code> keyword – moving the asynchrony to the code where the generator’s <em>iterator</em> is controlled.</p>
+<p>In other words, generators preserve a sequential, synchronous, blocking code pattern for async code, which lets our brains reason about the code much more naturally, addressing one of the two key drawbacks of callback-based async.</p>
+</div>
+</div>
+</body>
+</html>
+

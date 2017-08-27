@@ -1,0 +1,348 @@
+.adc {
+    display: block;
+    text-align: center;
+    text-indent: 0;
+    margin: 0
+    }
+.appendix-title {
+    display: block;
+    font-size: 1.83333em;
+    font-weight: bold;
+    line-height: 1.2;
+    text-align: center;
+    text-indent: 0;
+    margin: 10% 0 2em
+    }
+.attribution {
+    display: block;
+    text-align: right;
+    text-indent: 0;
+    margin: 0 0 1.5em
+    }
+.backmatter-rw {
+    text-align: center;
+    text-indent: 0
+    }
+.bl-list {
+    display: block;
+    line-height: 1.3em;
+    padding-left: 2.4em;
+    text-indent: -0.6em;
+    margin: 0
+    }
+.blockquote {
+    display: block;
+    margin-bottom: 1.5em;
+    margin-top: 1.5em
+    }
+.blockquote-firstpara {
+    display: block;
+    text-indent: 0;
+    margin: 0 20pt
+    }
+.blockquote-indentedpara {
+    display: block;
+    text-indent: 1em;
+    margin: 0 20pt
+    }
+.blockquote-indentedpara1 {
+    display: block;
+    text-indent: 0;
+    margin: 1em 20pt 0
+    }
+.calibre {
+    display: block;
+    font-size: 1em;
+    line-height: 1.2em;
+    padding-left: 0;
+    padding-right: 0;
+    margin: 0 5pt
+    }
+.calibre1 {
+    display: inline;
+    height: auto;
+    page-break-inside: avoid;
+    width: 100%;
+    margin: 0;
+    padding: 0
+    }
+.calibre2 {
+    font-style: italic
+    }
+.calibre3 {
+    display: block;
+    font-size: 1.66667em;
+    font-weight: bold;
+    line-height: 1.2;
+    margin: 2em 0 1em
+    }
+.calibre4 {
+    display: list-item;
+    font-size: 1em
+    }
+.calibre5 {
+    display: block;
+    text-indent: 20pt;
+    margin: 0
+    }
+.calibre6 {
+    font-weight: bold
+    }
+.calibre7 {
+    display: block
+    }
+.calibre8 {
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+    display: block;
+    font-size: 1em;
+    padding-left: 0;
+    padding-right: 0;
+    text-align: center;
+    margin: 0 5pt
+    }
+.calibre9 {
+    display: block;
+    text-align: center;
+    margin: 2em 0
+    }
+.center {
+    -webkit-hyphens: none;
+    display: block;
+    font-size: 1.29167em;
+    font-weight: bold;
+    line-height: 1.2;
+    text-align: center;
+    margin: 1em 0
+    }
+.center1 {
+    display: block;
+    text-align: center;
+    margin: 0
+    }
+.chapter-title {
+    display: block;
+    font-size: 1.83333em;
+    font-weight: bold;
+    line-height: 1.2;
+    text-align: center;
+    text-indent: 0;
+    margin: 0.5em 0 2em
+    }
+.copyright {
+    display: block;
+    font-size: 1em;
+    text-align: left;
+    text-indent: 0;
+    margin: 0
+    }
+.copyright-space {
+    display: block;
+    font-size: 1em;
+    text-align: left;
+    text-indent: 0;
+    margin: 1em 0 0
+    }
+.copyright-title {
+    display: block;
+    font-size: 1.29167em;
+    font-weight: normal;
+    line-height: 1.2;
+    text-align: center;
+    text-indent: 0;
+    margin: 10% 0 2em
+    }
+.dedication {
+    display: block;
+    text-align: center;
+    text-indent: 0;
+    margin: 15% 0% 0
+    }
+.epigraph {
+    display: block;
+    margin: 1.5em 20pt
+    }
+.frontmatter-rw {
+    display: block;
+    font-size: 1.29167em;
+    line-height: 1.2;
+    text-align: center;
+    padding: 2em
+    }
+.galley-rw {
+    display: block;
+    font-size: 1em;
+    font-weight: normal;
+    letter-spacing: 0;
+    line-height: 1.2em;
+    orphans: 1;
+    text-align: justify;
+    widows: 1;
+    word-spacing: 0;
+    margin: 0;
+    padding: 0
+    }
+.galley-rw1 {
+    display: block
+    }
+.hanging {
+    display: block;
+    line-height: 1.3em;
+    padding-left: 1em;
+    text-indent: -1em;
+    margin: 0
+    }
+.hidden-tag {
+    display: none;
+    visibility: hidden
+    }
+.nl-list {
+    display: block;
+    line-height: 1.3em;
+    padding-left: 3em;
+    text-indent: -0.9em;
+    margin: 0
+    }
+.noindent {
+    display: block;
+    text-indent: 0;
+    margin: 0
+    }
+.none {
+    display: block;
+    list-style-type: none;
+    margin-bottom: 0;
+    margin-right: 0;
+    margin-top: 0;
+    padding-bottom: 0;
+    padding-right: 0;
+    padding-top: 0
+    }
+.pc {
+    display: block;
+    text-align: center;
+    text-indent: 0;
+    margin: 0;
+    padding: 0.5em 0
+    }
+.preface-title {
+    display: block;
+    font-size: 1.29167em;
+    font-weight: bold;
+    line-height: 1.2em;
+    text-align: center;
+    text-indent: 0;
+    margin: 10% 0 2em
+    }
+.sect {
+    display: block;
+    font-size: 0.83333em;
+    font-style: italic;
+    font-weight: bold;
+    line-height: 1.2;
+    text-align: center;
+    text-indent: 0;
+    margin: 10% 0 2em
+    }
+.sect1 {
+    display: block;
+    font-size: 0.83333em;
+    font-style: italic;
+    font-weight: bold;
+    line-height: 1.2;
+    text-align: center;
+    text-indent: 0;
+    margin: 10% 0 2em
+    }
+.sect2 {
+    display: block;
+    font-size: 0.83333em;
+    font-weight: bold;
+    line-height: 1.2em;
+    text-align: center;
+    text-indent: 0;
+    margin: 2em 0 1em
+    }
+.sect3 {
+    display: block;
+    font-size: 0.83333em;
+    font-weight: bold;
+    line-height: 1.2em;
+    text-align: center;
+    text-indent: 0;
+    margin: 2em 0 1em
+    }
+.signupbutton {
+    -webkit-box-shadow: 0 0 5px #aaa inset;
+    background: rgb(106, 115, 123);
+    border-radius: 5px;
+    font-size: 1.29167em;
+    height: 40px;
+    line-height: 1.2;
+    text-decoration: none;
+    width: 160px;
+    border: #444 solid 1px;
+    padding: 8px 24px
+    }
+.signuplink {
+    color: white;
+    text-decoration: none
+    }
+.small-caps {
+    font-size: 0.75em
+    }
+.small-caps1 {
+    font-size: 0.64516em
+    }
+.specials-rw {
+    display: block;
+    font-size: 1em;
+    font-weight: normal;
+    line-height: 1.2em;
+    padding-bottom: 2em;
+    padding-top: 2em;
+    text-align: left
+    }
+.toc-chapter {
+    display: list-item;
+    font-size: 1em;
+    margin-bottom: 6pt;
+    margin-top: 16pt;
+    text-align: center;
+    text-indent: 0
+    }
+.toc-front {
+    display: list-item;
+    font-size: 1em;
+    margin-bottom: 6pt;
+    margin-top: 6pt;
+    text-align: center;
+    text-indent: 0
+    }
+.toc-title {
+    display: block;
+    font-size: 1.66667em;
+    font-weight: bold;
+    line-height: 1.2;
+    text-align: center;
+    text-indent: 0;
+    margin: 10% 0 2em
+    }
+.width {
+    display: block;
+    page-break-inside: avoid;
+    width: 89%;
+    margin: 0 5%
+    }
+.width1 {
+    display: block;
+    page-break-inside: avoid;
+    width: 95%;
+    margin: 0 5%
+    }
+.pcalibre1:hover {
+    -webkit-box-shadow: 0 0 15px #555 inset
+    }
+.pcalibre:active {
+    -webkit-box-shadow: 0 0 15px #555 inset;
+    background: #555
+    }

@@ -1,0 +1,287 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title>Chapter 5: Program Performance</title>
+  <style type="text/css">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+code > span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code > span.dt { color: #902000; } /* DataType */
+code > span.dv { color: #40a070; } /* DecVal */
+code > span.bn { color: #40a070; } /* BaseN */
+code > span.fl { color: #40a070; } /* Float */
+code > span.ch { color: #4070a0; } /* Char */
+code > span.st { color: #4070a0; } /* String */
+code > span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code > span.ot { color: #007020; } /* Other */
+code > span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code > span.fu { color: #06287e; } /* Function */
+code > span.er { color: #ff0000; font-weight: bold; } /* Error */
+code > span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+code > span.cn { color: #880000; } /* Constant */
+code > span.sc { color: #4070a0; } /* SpecialChar */
+code > span.vs { color: #4070a0; } /* VerbatimString */
+code > span.ss { color: #bb6688; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { color: #19177c; } /* Variable */
+code > span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code > span.op { color: #666666; } /* Operator */
+code > span.bu { } /* BuiltIn */
+code > span.ex { } /* Extension */
+code > span.pp { color: #bc7a00; } /* Preprocessor */
+code > span.at { color: #7d9029; } /* Attribute */
+code > span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code > span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code > span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+  </style>
+  <link rel="stylesheet" type="text/css" href="stylesheet.css" />
+</head>
+<body>
+<div id="chapter-5-program-performance" class="section level1">
+<h1>Chapter 5: Program Performance</h1>
+<p>This book so far has been all about how to leverage asynchrony patterns more effectively. But we haven’t directly addressed why asynchrony really matters to JS. The most obvious explicit reason is <strong>performance</strong>.</p>
+<p>For example, if you have two Ajax requests to make, and they’re independent, but you need to wait on them both to finish before doing the next task, you have two options for modeling that interaction: serial and concurrent.</p>
+<p>You could make the first request and wait to start the second request until the first finishes. Or, as we’ve seen both with promises and generators, you could make both requests “in parallel,” and express the “gate” to wait on both of them before moving on.</p>
+<p>Clearly, the latter is usually going to be more performant than the former. And better performance generally leads to better user experience.</p>
+<p>It’s even possible that asynchrony (interleaved concurrency) can improve just the perception of performance, even if the overall program still takes the same amount of time to complete. User perception of performance is every bit – if not more! – as important as actual measurable performance.</p>
+<p>We want to now move beyond localized asynchrony patterns to talk about some bigger picture performance details at the program level.</p>
+<p><strong>Note:</strong> You may be wondering about micro-performance issues like if <code>a++</code> or <code>++a</code> is faster. We’ll look at those sorts of performance details in the next chapter on “Benchmarking &amp; Tuning.”</p>
+<div id="web-workers" class="section level2">
+<h2>Web Workers</h2>
+<p>If you have processing-intensive tasks but you don’t want them to run on the main thread (which may slow down the browser/UI), you might have wished that JavaScript could operate in a multithreaded manner.</p>
+<p>In Chapter 1, we talked in detail about how JavaScript is single threaded. And that’s still true. But a single thread isn’t the only way to organize the execution of your program.</p>
+<p>Imagine splitting your program into two pieces, and running one of those pieces on the main UI thread, and running the other piece on an entirely separate thread.</p>
+<p>What kinds of concerns would such an architecture bring up?</p>
+<p>For one, you’d want to know if running on a separate thread meant that it ran in parallel (on systems with multiple CPUs/cores) such that a long-running process on that second thread would <strong>not</strong> block the main program thread. Otherwise, “virtual threading” wouldn’t be of much benefit over what we already have in JS with async concurrency.</p>
+<p>And you’d want to know if these two pieces of the program have access to the same shared scope/resources. If they do, then you have all the questions that multithreaded languages (Java, C++, etc.) deal with, such as needing cooperative or preemptive locking (mutexes, etc.). That’s a lot of extra work, and shouldn’t be undertaken lightly.</p>
+<p>Alternatively, you’d want to know how these two pieces could “communicate” if they couldn’t share scope/resources.</p>
+<p>All these are great questions to consider as we explore a feature added to the web platform circa HTML5 called “Web Workers.” This is a feature of the browser (aka host environment) and actually has almost nothing to do with the JS language itself. That is, JavaScript does not <em>currently</em> have any features that support threaded execution.</p>
+<p>But an environment like your browser can easily provide multiple instances of the JavaScript engine, each on its own thread, and let you run a different program in each thread. Each of those separate threaded pieces of your program is called a “(Web) Worker.” This type of parallelism is called “task parallelism,” as the emphasis is on splitting up chunks of your program to run in parallel.</p>
+<p>From your main JS program (or another Worker), you instantiate a Worker like so:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="kw">var</span> w1 <span class="op">=</span> <span class="kw">new</span> <span class="at">Worker</span>( <span class="st">&quot;http://some.url.1/mycoolworker.js&quot;</span> )<span class="op">;</span></code></pre></div>
+<p>The URL should point to the location of a JS file (not an HTML page!) which is intended to be loaded into a Worker. The browser will then spin up a separate thread and let that file run as an independent program in that thread.</p>
+<p><strong>Note:</strong> The kind of Worker created with such a URL is called a “Dedicated Worker.” But instead of providing a URL to an external file, you can also create an “Inline Worker” by providing a Blob URL (another HTML5 feature); essentially it’s an inline file stored in a single (binary) value. However, Blobs are beyond the scope of what we’ll discuss here.</p>
+<p>Workers do not share any scope or resources with each other or the main program – that would bring all the nightmares of threaded programming to the forefront – but instead have a basic event messaging mechanism connecting them.</p>
+<p>The <code>w1</code> Worker object is an event listener and trigger, which lets you subscribe to events sent by the Worker as well as send events to the Worker.</p>
+<p>Here’s how to listen for events (actually, the fixed <code>&quot;message&quot;</code> event):</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="va">w1</span>.<span class="at">addEventListener</span>( <span class="st">&quot;message&quot;</span><span class="op">,</span> <span class="kw">function</span>(evt)<span class="op">{</span>
+    <span class="co">// evt.data</span>
+<span class="op">}</span> )<span class="op">;</span></code></pre></div>
+<p>And you can send the <code>&quot;message&quot;</code> event to the Worker:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="va">w1</span>.<span class="at">postMessage</span>( <span class="st">&quot;something cool to say&quot;</span> )<span class="op">;</span></code></pre></div>
+<p>Inside the Worker, the messaging is totally symmetrical:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="co">// &quot;mycoolworker.js&quot;</span>
+
+<span class="at">addEventListener</span>( <span class="st">&quot;message&quot;</span><span class="op">,</span> <span class="kw">function</span>(evt)<span class="op">{</span>
+    <span class="co">// evt.data</span>
+<span class="op">}</span> )<span class="op">;</span>
+
+<span class="at">postMessage</span>( <span class="st">&quot;a really cool reply&quot;</span> )<span class="op">;</span></code></pre></div>
+<p>Notice that a dedicated Worker is in a one-to-one relationship with the program that created it. That is, the <code>&quot;message&quot;</code> event doesn’t need any disambiguation here, because we’re sure that it could only have come from this one-to-one relationship – either it came from the Worker or the main page.</p>
+<p>Usually the main page application creates the Workers, but a Worker can instantiate its own child Worker(s) – known as subworkers – as necessary. Sometimes this is useful to delegate such details to a sort of “master” Worker that spawns other Workers to process parts of a task. Unfortunately, at the time of this writing, Chrome still does not support subworkers, while Firefox does.</p>
+<p>To kill a Worker immediately from the program that created it, call <code>terminate()</code> on the Worker object (like <code>w1</code> in the previous snippets). Abruptly terminating a Worker thread does not give it any chance to finish up its work or clean up any resources. It’s akin to you closing a browser tab to kill a page.</p>
+<p>If you have two or more pages (or multiple tabs with the same page!) in the browser that try to create a Worker from the same file URL, those will actually end up as completely separate Workers. Shortly, we’ll discuss a way to “share” a Worker.</p>
+<p><strong>Note:</strong> It may seem like a malicious or ignorant JS program could easily perform a denial-of-service attack on a system by spawning hundreds of Workers, seemingly each with their own thread. While it’s true that it’s somewhat of a guarantee that a Worker will end up on a separate thread, this guarantee is not unlimited. The system is free to decide how many actual threads/CPUs/cores it really wants to create. There’s no way to predict or guarantee how many you’ll have access to, though many people assume it’s at least as many as the number of CPUs/cores available. I think the safest assumption is that there’s at least one other thread besides the main UI thread, but that’s about it.</p>
+<div id="worker-environment" class="section level3">
+<h3>Worker Environment</h3>
+<p>Inside the Worker, you do not have access to any of the main program’s resources. That means you cannot access any of its global variables, nor can you access the page’s DOM or other resources. Remember: it’s a totally separate thread.</p>
+<p>You can, however, perform network operations (Ajax, WebSockets) and set timers. Also, the Worker has access to its own copy of several important global variables/features, including <code>navigator</code>, <code>location</code>, <code>JSON</code>, and <code>applicationCache</code>.</p>
+<p>You can also load extra JS scripts into your Worker, using <code>importScripts(..)</code>:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="co">// inside the Worker</span>
+<span class="at">importScripts</span>( <span class="st">&quot;foo.js&quot;</span><span class="op">,</span> <span class="st">&quot;bar.js&quot;</span> )<span class="op">;</span></code></pre></div>
+<p>These scripts are loaded synchronously, which means the <code>importScripts(..)</code> call will block the rest of the Worker’s execution until the file(s) are finished loading and executing.</p>
+<p><strong>Note:</strong> There have also been some discussions about exposing the <code>&lt;canvas&gt;</code> API to Workers, which combined with having canvases be Transferables (see the “Data Transfer” section), would allow Workers to perform more sophisticated off-thread graphics processing, which can be useful for high-performance gaming (WebGL) and other similar applications. Although this doesn’t exist yet in any browsers, it’s likely to happen in the near future.</p>
+<p>What are some common uses for Web Workers?</p>
+<ul>
+<li>Processing intensive math calculations</li>
+<li>Sorting large data sets</li>
+<li>Data operations (compression, audio analysis, image pixel manipulations, etc.)</li>
+<li>High-traffic network communications</li>
+</ul>
+</div>
+<div id="data-transfer" class="section level3">
+<h3>Data Transfer</h3>
+<p>You may notice a common characteristic of most of those uses, which is that they require a large amount of information to be transferred across the barrier between threads using the event mechanism, perhaps in both directions.</p>
+<p>In the early days of Workers, serializing all data to a string value was the only option. In addition to the speed penalty of the two-way serializations, the other major negative was that the data was being copied, which meant a doubling of memory usage (and the subsequent churn of garbage collection).</p>
+<p>Thankfully, we now have a few better options.</p>
+<p>If you pass an object, a so-called “Structured Cloning Algorithm” (https://developer.mozilla.org/en-US/docs/Web/Guide/API/DOM/The_structured_clone_algorithm) is used to copy/duplicate the object on the other side. This algorithm is fairly sophisticated and can even handle duplicating objects with circular references. The to-string/from-string performance penalty is not paid, but we still have duplication of memory using this approach. There is support for this in IE10 and above, as well as all the other major browsers.</p>
+<p>An even better option, especially for larger data sets, is “Transferable Objects” (http://updates.html5rocks.com/2011/12/Transferable-Objects-Lightning-Fast). What happens is that the object’s “ownership” is transferred, but the data itself is not moved. Once you transfer away an object to a Worker, it’s empty or inaccessible in the originating location – that eliminates the hazards of threaded programming over a shared scope. Of course, transfer of ownership can go in both directions.</p>
+<p>There really isn’t much you need to do to opt into a Transferable Object; any data structure that implements the Transferable interface (https://developer.mozilla.org/en-US/docs/Web/API/Transferable) will automatically be transferred this way (support Firefox &amp; Chrome).</p>
+<p>For example, typed arrays like <code>Uint8Array</code> (see the <em>ES6 &amp; Beyond</em> title of this series) are “Transferables.” This is how you’d send a Transferable Object using <code>postMessage(..)</code>:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="co">// `foo` is a `Uint8Array` for instance</span>
+
+<span class="at">postMessage</span>( <span class="va">foo</span>.<span class="at">buffer</span><span class="op">,</span> [ <span class="va">foo</span>.<span class="at">buffer</span> ] )<span class="op">;</span></code></pre></div>
+<p>The first parameter is the raw buffer and the second parameter is a list of what to transfer.</p>
+<p>Browsers that don’t support Transferable Objects simply degrade to structured cloning, which means performance reduction rather than outright feature breakage.</p>
+</div>
+<div id="shared-workers" class="section level3">
+<h3>Shared Workers</h3>
+<p>If your site or app allows for loading multiple tabs of the same page (a common feature), you may very well want to reduce the resource usage of their system by preventing duplicate dedicated Workers; the most common limited resource in this respect is a socket network connection, as browsers limit the number of simultaneous connections to a single host. Of course, limiting multiple connections from a client also eases your server resource requirements.</p>
+<p>In this case, creating a single centralized Worker that all the page instances of your site or app can <em>share</em> is quite useful.</p>
+<p>That’s called a <code>SharedWorker</code>, which you create like so (support for this is limited to Firefox and Chrome):</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="kw">var</span> w1 <span class="op">=</span> <span class="kw">new</span> <span class="at">SharedWorker</span>( <span class="st">&quot;http://some.url.1/mycoolworker.js&quot;</span> )<span class="op">;</span></code></pre></div>
+<p>Because a shared Worker can be connected to or from more than one program instance or page on your site, the Worker needs a way to know which program a message comes from. This unique identification is called a “port” – think network socket ports. So the calling program must use the <code>port</code> object of the Worker for communication:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="va">w1</span>.<span class="va">port</span>.<span class="at">addEventListener</span>( <span class="st">&quot;message&quot;</span><span class="op">,</span> handleMessages )<span class="op">;</span>
+
+<span class="co">// ..</span>
+
+<span class="va">w1</span>.<span class="va">port</span>.<span class="at">postMessage</span>( <span class="st">&quot;something cool&quot;</span> )<span class="op">;</span></code></pre></div>
+<p>Also, the port connection must be initialized, as:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="va">w1</span>.<span class="va">port</span>.<span class="at">start</span>()<span class="op">;</span></code></pre></div>
+<p>Inside the shared Worker, an extra event must be handled: <code>&quot;connect&quot;</code>. This event provides the port <code>object</code> for that particular connection. The most convenient way to keep multiple connections separate is to use closure (see <em>Scope &amp; Closures</em> title of this series) over the <code>port</code>, as shown next, with the event listening and transmitting for that connection defined inside the handler for the <code>&quot;connect&quot;</code> event:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="co">// inside the shared Worker</span>
+<span class="at">addEventListener</span>( <span class="st">&quot;connect&quot;</span><span class="op">,</span> <span class="kw">function</span>(evt)<span class="op">{</span>
+    <span class="co">// the assigned port for this connection</span>
+    <span class="kw">var</span> port <span class="op">=</span> <span class="va">evt</span>.<span class="at">ports</span>[<span class="dv">0</span>]<span class="op">;</span>
+
+    <span class="va">port</span>.<span class="at">addEventListener</span>( <span class="st">&quot;message&quot;</span><span class="op">,</span> <span class="kw">function</span>(evt)<span class="op">{</span>
+        <span class="co">// ..</span>
+
+        <span class="va">port</span>.<span class="at">postMessage</span>( .. )<span class="op">;</span>
+
+        <span class="co">// ..</span>
+    <span class="op">}</span> )<span class="op">;</span>
+
+    <span class="co">// initialize the port connection</span>
+    <span class="va">port</span>.<span class="at">start</span>()<span class="op">;</span>
+<span class="op">}</span> )<span class="op">;</span></code></pre></div>
+<p>Other than that difference, shared and dedicated Workers have the same capabilities and semantics.</p>
+<p><strong>Note:</strong> Shared Workers survive the termination of a port connection if other port connections are still alive, whereas dedicated Workers are terminated whenever the connection to their initiating program is terminated.</p>
+</div>
+<div id="polyfilling-web-workers" class="section level3">
+<h3>Polyfilling Web Workers</h3>
+<p>Web Workers are very attractive performance-wise for running JS programs in parallel. However, you may be in a position where your code needs to run in older browsers that lack support. Because Workers are an API and not a syntax, they can be polyfilled, to an extent.</p>
+<p>If a browser doesn’t support Workers, there’s simply no way to fake multithreading from the performance perspective. Iframes are commonly thought of to provide a parallel environment, but in all modern browsers they actually run on the same thread as the main page, so they’re not sufficient for faking parallelism.</p>
+<p>As we detailed in Chapter 1, JS’s asynchronicity (not parallelism) comes from the event loop queue, so you can force faked Workers to be asynchronous using timers (<code>setTimeout(..)</code>, etc.). Then you just need to provide a polyfill for the Worker API. There are some listed here (https://github.com/Modernizr/Modernizr/wiki/HTML5-Cross-Browser-Polyfills#web-workers), but frankly none of them look great.</p>
+<p>I’ve written a sketch of a polyfill for <code>Worker</code> here (https://gist.github.com/getify/1b26accb1a09aa53ad25). It’s basic, but it should get the job done for simple <code>Worker</code> support, given that the two-way messaging works correctly as well as <code>&quot;onerror&quot;</code> handling. You could probably also extend it with more features, such as <code>terminate()</code> or faked Shared Workers, as you see fit.</p>
+<p><strong>Note:</strong> You can’t fake synchronous blocking, so this polyfill just disallows use of <code>importScripts(..)</code>. Another option might have been to parse and transform the Worker’s code (once Ajax loaded) to handle rewriting to some asynchronous form of an <code>importScripts(..)</code> polyfill, perhaps with a promise-aware interface.</p>
+</div>
+</div>
+<div id="simd" class="section level2">
+<h2>SIMD</h2>
+<p>Single instruction, multiple data (SIMD) is a form of “data parallelism,” as contrasted to “task parallelism” with Web Workers, because the emphasis is not really on program logic chunks being parallelized, but rather multiple bits of data being processed in parallel.</p>
+<p>With SIMD, threads don’t provide the parallelism. Instead, modern CPUs provide SIMD capability with “vectors” of numbers – think: type specialized arrays – as well as instructions that can operate in parallel across all the numbers; these are low-level operations leveraging instruction-level parallelism.</p>
+<p>The effort to expose SIMD capability to JavaScript is primarily spearheaded by Intel (https://01.org/node/1495), namely by Mohammad Haghighat (at the time of this writing), in cooperation with Firefox and Chrome teams. SIMD is on an early standards track with a good chance of making it into a future revision of JavaScript, likely in the ES7 timeframe.</p>
+<p>SIMD JavaScript proposes to expose short vector types and APIs to JS code, which on those SIMD-enabled systems would map the operations directly through to the CPU equivalents, with fallback to non-parallelized operation “shims” on non-SIMD systems.</p>
+<p>The performance benefits for data-intensive applications (signal analysis, matrix operations on graphics, etc.) with such parallel math processing are quite obvious!</p>
+<p>Early proposal forms of the SIMD API at the time of this writing look like this:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="kw">var</span> v1 <span class="op">=</span> <span class="va">SIMD</span>.<span class="at">float32x4</span>( <span class="fl">3.14159</span><span class="op">,</span> <span class="fl">21.0</span><span class="op">,</span> <span class="fl">32.3</span><span class="op">,</span> <span class="fl">55.55</span> )<span class="op">;</span>
+<span class="kw">var</span> v2 <span class="op">=</span> <span class="va">SIMD</span>.<span class="at">float32x4</span>( <span class="fl">2.1</span><span class="op">,</span> <span class="fl">3.2</span><span class="op">,</span> <span class="fl">4.3</span><span class="op">,</span> <span class="fl">5.4</span> )<span class="op">;</span>
+
+<span class="kw">var</span> v3 <span class="op">=</span> <span class="va">SIMD</span>.<span class="at">int32x4</span>( <span class="dv">10</span><span class="op">,</span> <span class="dv">101</span><span class="op">,</span> <span class="dv">1001</span><span class="op">,</span> <span class="dv">10001</span> )<span class="op">;</span>
+<span class="kw">var</span> v4 <span class="op">=</span> <span class="va">SIMD</span>.<span class="at">int32x4</span>( <span class="dv">10</span><span class="op">,</span> <span class="dv">20</span><span class="op">,</span> <span class="dv">30</span><span class="op">,</span> <span class="dv">40</span> )<span class="op">;</span>
+
+<span class="va">SIMD</span>.<span class="va">float32x4</span>.<span class="at">mul</span>( v1<span class="op">,</span> v2 )<span class="op">;</span>   <span class="co">// [ 6.597339, 67.2, 138.89, 299.97 ]</span>
+<span class="va">SIMD</span>.<span class="va">int32x4</span>.<span class="at">add</span>( v3<span class="op">,</span> v4 )<span class="op">;</span>     <span class="co">// [ 20, 121, 1031, 10041 ]</span></code></pre></div>
+<p>Shown here are two different vector data types, 32-bit floating-point numbers and 32-bit integer numbers. You can see that these vectors are sized exactly to four 32-bit elements, as this matches the SIMD vector sizes (128-bit) available in most modern CPUs. It’s also possible we may see an <code>x8</code> (or larger!) version of these APIs in the future.</p>
+<p>Besides <code>mul()</code> and <code>add()</code>, many other operations are likely to be included, such as <code>sub()</code>, <code>div()</code>, <code>abs()</code>, <code>neg()</code>, <code>sqrt()</code>, <code>reciprocal()</code>, <code>reciprocalSqrt()</code> (arithmetic), <code>shuffle()</code> (rearrange vector elements), <code>and()</code>, <code>or()</code>, <code>xor()</code>, <code>not()</code> (logical), <code>equal()</code>, <code>greaterThan()</code>, <code>lessThan()</code> (comparison), <code>shiftLeft()</code>, <code>shiftRightLogical()</code>, <code>shiftRightArithmetic()</code> (shifts), <code>fromFloat32x4()</code>, and <code>fromInt32x4()</code> (conversions).</p>
+<p><strong>Note:</strong> There’s an official “prollyfill” (hopeful, expectant, future-leaning polyfill) for the SIMD functionality available (https://github.com/johnmccutchan/ecmascript_simd), which illustrates a lot more of the planned SIMD capability than we’ve illustrated in this section.</p>
+</div>
+<div id="asm.js" class="section level2">
+<h2>asm.js</h2>
+<p>“asm.js” (http://asmjs.org/) is a label for a highly optimizable subset of the JavaScript language. By carefully avoiding certain mechanisms and patterns that are <em>hard</em> to optimize (garbage collection, coercion, etc.), asm.js-styled code can be recognized by the JS engine and given special attention with aggressive low-level optimizations.</p>
+<p>Distinct from other program performance mechanisms discussed in this chapter, asm.js isn’t necessarily something that needs to be adopted into the JS language specification. There <em>is</em> an asm.js specification (http://asmjs.org/spec/latest/), but it’s mostly for tracking an agreed upon set of candidate inferences for optimization rather than a set of requirements of JS engines.</p>
+<p>There’s not currently any new syntax being proposed. Instead, asm.js suggests ways to recognize existing standard JS syntax that conforms to the rules of asm.js and let engines implement their own optimizations accordingly.</p>
+<p>There’s been some disagreement between browser vendors over exactly how asm.js should be activated in a program. Early versions of the asm.js experiment required a <code>&quot;use asm&quot;;</code> pragma (similar to strict mode’s <code>&quot;use strict&quot;;</code>) to help clue the JS engine to be looking for asm.js optimization opportunities and hints. Others have asserted that asm.js should just be a set of heuristics that engines automatically recognize without the author having to do anything extra, meaning that existing programs could theoretically benefit from asm.js-style optimizations without doing anything special.</p>
+<div id="how-to-optimize-with-asm.js" class="section level3">
+<h3>How to Optimize with asm.js</h3>
+<p>The first thing to understand about asm.js optimizations is around types and coercion (see the <em>Types &amp; Grammar</em> title of this series). If the JS engine has to track multiple different types of values in a variable through various operations, so that it can handle coercions between types as necessary, that’s a lot of extra work that keeps the program optimization suboptimal.</p>
+<p><strong>Note:</strong> We’re going to use asm.js-style code here for illustration purposes, but be aware that it’s not commonly expected that you’ll author such code by hand. asm.js is more intended to a compilation target from other tools, such as Emscripten (https://github.com/kripken/emscripten/wiki). It’s of course possible to write your own asm.js code, but that’s usually a bad idea because the code is very low level and managing it can be very time consuming and error prone. Nevertheless, there may be cases where you’d want to hand tweak your code for asm.js optimization purposes.</p>
+<p>There are some “tricks” you can use to hint to an asm.js-aware JS engine what the intended type is for variables/operations, so that it can skip these coercion tracking steps.</p>
+<p>For example:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="kw">var</span> a <span class="op">=</span> <span class="dv">42</span><span class="op">;</span>
+
+<span class="co">// ..</span>
+
+<span class="kw">var</span> b <span class="op">=</span> a<span class="op">;</span></code></pre></div>
+<p>In that program, the <code>b = a</code> assignment leaves the door open for type divergence in variables. However, it could instead be written as:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="kw">var</span> a <span class="op">=</span> <span class="dv">42</span><span class="op">;</span>
+
+<span class="co">// ..</span>
+
+<span class="kw">var</span> b <span class="op">=</span> a <span class="op">|</span> <span class="dv">0</span><span class="op">;</span></code></pre></div>
+<p>Here, we’ve used the <code>|</code> (“binary OR”) with value <code>0</code>, which has no effect on the value other than to make sure it’s a 32-bit integer. That code run in a normal JS engine works just fine, but when run in an asm.js-aware JS engine it <em>can</em> signal that <code>b</code> should always be treated as a 32-bit integer, so the coercion tracking can be skipped.</p>
+<p>Similarly, the addition operation between two variables can be restricted to a more performant integer addition (instead of floating point):</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript">(a <span class="op">+</span> b) <span class="op">|</span> <span class="dv">0</span></code></pre></div>
+<p>Again, the asm.js-aware JS engine can see that hint and infer that the <code>+</code> operation should be 32-bit integer addition because the end result of the whole expression would automatically be 32-bit integer conformed anyway.</p>
+</div>
+<div id="asm.js-modules" class="section level3">
+<h3>asm.js Modules</h3>
+<p>One of the biggest detractors to performance in JS is around memory allocation, garbage collection, and scope access. asm.js suggests one of the ways around these issues is to declare a more formalized asm.js “module” – do not confuse these with ES6 modules; see the <em>ES6 &amp; Beyond</em> title of this series.</p>
+<p>For an asm.js module, you need to explicitly pass in a tightly conformed namespace – this is referred to in the spec as <code>stdlib</code>, as it should represent standard libraries needed – to import necessary symbols, rather than just using globals via lexical scope. In the base case, the <code>window</code> object is an acceptable <code>stdlib</code> object for asm.js module purposes, but you could and perhaps should construct an even more restricted one.</p>
+<p>You also must declare a “heap” – which is just a fancy term for a reserved spot in memory where variables can already be used without asking for more memory or releasing previously used memory – and pass that in, so that the asm.js module won’t need to do anything that would cause memory churn; it can just use the pre-reserved space.</p>
+<p>A “heap” is likely a typed <code>ArrayBuffer</code>, such as:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="kw">var</span> heap <span class="op">=</span> <span class="kw">new</span> <span class="at">ArrayBuffer</span>( <span class="bn">0x10000</span> )<span class="op">;</span>  <span class="co">// 64k heap</span></code></pre></div>
+<p>Using that pre-reserved 64k of binary space, an asm.js module can store and retrieve values in that buffer without any memory allocation or garbage collection penalties. For example, the <code>heap</code> buffer could be used inside the module to back an array of 64-bit float values like this:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="kw">var</span> arr <span class="op">=</span> <span class="kw">new</span> <span class="at">Float64Array</span>( heap )<span class="op">;</span></code></pre></div>
+<p>OK, so let’s make a quick, silly example of an asm.js-styled module to illustrate how these pieces fit together. We’ll define a <code>foo(..)</code> that takes a start (<code>x</code>) and end (<code>y</code>) integer for a range, and calculates all the inner adjacent multiplications of the values in the range, and then finally averages those values together:</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="kw">function</span> <span class="at">fooASM</span>(stdlib<span class="op">,</span>foreign<span class="op">,</span>heap) <span class="op">{</span>
+    <span class="st">&quot;use asm&quot;</span><span class="op">;</span>
+
+    <span class="kw">var</span> arr <span class="op">=</span> <span class="kw">new</span> <span class="va">stdlib</span>.<span class="at">Int32Array</span>( heap )<span class="op">;</span>
+
+    <span class="kw">function</span> <span class="at">foo</span>(x<span class="op">,</span>y) <span class="op">{</span>
+        x <span class="op">=</span> x <span class="op">|</span> <span class="dv">0</span><span class="op">;</span>
+        y <span class="op">=</span> y <span class="op">|</span> <span class="dv">0</span><span class="op">;</span>
+
+        <span class="kw">var</span> i <span class="op">=</span> <span class="dv">0</span><span class="op">;</span>
+        <span class="kw">var</span> p <span class="op">=</span> <span class="dv">0</span><span class="op">;</span>
+        <span class="kw">var</span> sum <span class="op">=</span> <span class="dv">0</span><span class="op">;</span>
+        <span class="kw">var</span> count <span class="op">=</span> ((y<span class="op">|</span><span class="dv">0</span>) <span class="op">-</span> (x<span class="op">|</span><span class="dv">0</span>)) <span class="op">|</span> <span class="dv">0</span><span class="op">;</span>
+
+        <span class="co">// calculate all the inner adjacent multiplications</span>
+        <span class="cf">for</span> (i <span class="op">=</span> x <span class="op">|</span> <span class="dv">0</span><span class="op">;</span>
+            (i <span class="op">|</span> <span class="dv">0</span>) <span class="op">&lt;</span> (y <span class="op">|</span> <span class="dv">0</span>)<span class="op">;</span>
+            p <span class="op">=</span> (p <span class="op">+</span> <span class="dv">8</span>) <span class="op">|</span> <span class="dv">0</span><span class="op">,</span> i <span class="op">=</span> (i <span class="op">+</span> <span class="dv">1</span>) <span class="op">|</span> <span class="dv">0</span>
+        ) <span class="op">{</span>
+            <span class="co">// store result</span>
+            arr[ p <span class="op">&gt;&gt;</span> <span class="dv">3</span> ] <span class="op">=</span> (i <span class="op">*</span> (i <span class="op">+</span> <span class="dv">1</span>)) <span class="op">|</span> <span class="dv">0</span><span class="op">;</span>
+        <span class="op">}</span>
+
+        <span class="co">// calculate average of all intermediate values</span>
+        <span class="cf">for</span> (i <span class="op">=</span> <span class="dv">0</span><span class="op">,</span> p <span class="op">=</span> <span class="dv">0</span><span class="op">;</span>
+            (i <span class="op">|</span> <span class="dv">0</span>) <span class="op">&lt;</span> (count <span class="op">|</span> <span class="dv">0</span>)<span class="op">;</span>
+            p <span class="op">=</span> (p <span class="op">+</span> <span class="dv">8</span>) <span class="op">|</span> <span class="dv">0</span><span class="op">,</span> i <span class="op">=</span> (i <span class="op">+</span> <span class="dv">1</span>) <span class="op">|</span> <span class="dv">0</span>
+        ) <span class="op">{</span>
+            sum <span class="op">=</span> (sum <span class="op">+</span> arr[ p <span class="op">&gt;&gt;</span> <span class="dv">3</span> ]) <span class="op">|</span> <span class="dv">0</span><span class="op">;</span>
+        <span class="op">}</span>
+
+        <span class="cf">return</span> <span class="op">+</span>(sum / count)<span class="op">;</span>
+    <span class="op">}</span>
+
+    <span class="cf">return</span> <span class="op">{</span>
+        <span class="dt">foo</span><span class="op">:</span> foo
+    <span class="op">};</span>
+<span class="op">}</span>
+
+<span class="kw">var</span> heap <span class="op">=</span> <span class="kw">new</span> <span class="at">ArrayBuffer</span>( <span class="bn">0x1000</span> )<span class="op">;</span>
+<span class="kw">var</span> foo <span class="op">=</span> <span class="at">fooASM</span>( window<span class="op">,</span> <span class="kw">null</span><span class="op">,</span> heap ).<span class="at">foo</span><span class="op">;</span>
+
+<span class="at">foo</span>( <span class="dv">10</span><span class="op">,</span> <span class="dv">20</span> )<span class="op">;</span>      <span class="co">// 233</span></code></pre></div>
+<p><strong>Note:</strong> This asm.js example is hand authored for illustration purposes, so it doesn’t represent the same code that would be produced from a compilation tool targeting asm.js. But it does show the typical nature of asm.js code, especially the type hinting and use of the <code>heap</code> buffer for temporary variable storage.</p>
+<p>The first call to <code>fooASM(..)</code> is what sets up our asm.js module with its <code>heap</code> allocation. The result is a <code>foo(..)</code> function we can call as many times as necessary. Those <code>foo(..)</code> calls should be specially optimized by an asm.js-aware JS engine. Importantly, the preceding code is completely standard JS and would run just fine (without special optimization) in a non-asm.js engine.</p>
+<p>Obviously, the nature of restrictions that make asm.js code so optimizable reduces the possible uses for such code significantly. asm.js won’t necessarily be a general optimization set for any given JS program. Instead, it’s intended to provide an optimized way of handling specialized tasks such as intensive math operations (e.g., those used in graphics processing for games).</p>
+</div>
+</div>
+<div id="review-4" class="section level2">
+<h2>Review</h2>
+<p>The first four chapters of this book are based on the premise that async coding patterns give you the ability to write more performant code, which is generally a very important improvement. But async behavior only gets you so far, because it’s still fundamentally bound to a single event loop thread.</p>
+<p>So in this chapter we’ve covered several program-level mechanisms for improving performance even further.</p>
+<p>Web Workers let you run a JS file (aka program) in a separate thread using async events to message between the threads. They’re wonderful for offloading long-running or resource-intensive tasks to a different thread, leaving the main UI thread more responsive.</p>
+<p>SIMD proposes to map CPU-level parallel math operations to JavaScript APIs for high-performance data-parallel operations, like number processing on large data sets.</p>
+<p>Finally, asm.js describes a small subset of JavaScript that avoids the hard-to-optimize parts of JS (like garbage collection and coercion) and lets the JS engine recognize and run such code through aggressive optimizations. asm.js could be hand authored, but that’s extremely tedious and error prone, akin to hand authoring assembly language (hence the name). Instead, the main intent is that asm.js would be a good target for cross-compilation from other highly optimized program languages – for example, Emscripten (https://github.com/kripken/emscripten/wiki) transpiling C/C++ to JavaScript.</p>
+<p>While not covered explicitly in this chapter, there are even more radical ideas under very early discussion for JavaScript, including approximations of direct threaded functionality (not just hidden behind data structure APIs). Whether that happens explicitly, or we just see more parallelism creep into JS behind the scenes, the future of more optimized program-level performance in JS looks really <em>promising</em>.</p>
+</div>
+</div>
+</body>
+</html>
+
