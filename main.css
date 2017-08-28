@@ -4,10 +4,11 @@
 }
 @font-face{
     font-family: Lato;
-    src: url(./fonts/Lato-Regular.ttf);
+    src: url(./fonts/Lato-Light.ttf);
 }
 body{
     margin: 0px;
+    position: relative;
 }
 body:after{
     content: '';
@@ -47,8 +48,8 @@ svg{
     right: 5%;
 }
 .holder{
-    height: auto;
-    width: 100vw;
+    min-height: calc(100vh - 140px);
+    width: 96vw;
     display: flex;
     flex-direction: row;
     justify-content: flex-start;
@@ -59,8 +60,8 @@ svg{
 .books{
     flex: 0 0 20vw;
     margin: 0 4vw 50px 0;
-    overflow: hidden;
     white-space: nowrap;
+    opacity: 0;
 }
 .books div:before{
     content: '';
@@ -70,9 +71,8 @@ svg{
 .books div{
     position: relative;
     overflow: hidden;
-    border-radius: 2px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-
+    border-radius: 4px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.2);
 }
 .books img{
     width: 100%;
@@ -80,20 +80,58 @@ svg{
     top: 0;
 }
 .books h2{
-    width: 99%;
+    width: 20vw;
+    height: 20px;
     font-family: Lora;
     font-size: 16px;
-    margin-bottom: 6px;
+    margin-bottom: 5px;
     letter-spacing: 0.5px;
     overflow: hidden;
-    text-overflow: ellipsis; 
+    white-space: nowrap;
+    text-overflow: ellipsis;
 }
 .books h3{
     font-family: Lato;
     font-size: 14px;
-    font-weight: 300;
+    color: #CBCBCB;
     margin: 0px;
     overflow: hidden;
+    white-space: nowrap;
     text-overflow: ellipsis;
-    color: #CBCBCB;
+    letter-spacing: 0.3px;
+}
+.drag{
+    color: #DBDBDB;
+    background: rgba(0,0,0,0.90);
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 2;
+    display: flex;
+    visibility: hidden;
+    opacity: 0;
+    justify-content: center;
+    align-items: center;
+    outline: 1px dashed #fff;
+    outline-offset: -130px;
+    transition: all 250ms ease-in-out;
+}
+.drag-hover{
+    visibility: visible;
+    opacity: 1;
+}
+.drag h2{
+    font-family: Lato;
+}
+@keyframes show{
+  0%{
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100%{
+    opacity: 1;
+    transform: translateY(0px);
+  }
 }

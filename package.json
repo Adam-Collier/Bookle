@@ -17,13 +17,13 @@
   "author": "GitHub",
   "license": "CC0-1.0",
   "devDependencies": {
-    "electron": "~1.6.2"
+    "electron": "~1.6.2",
+    "electron-reload": "^1.2.1"
   },
   "dependencies": {
     "cheerio": "^0.22.0",
-    "electron-reload": "^1.2.1",
+    "extract-zip": "^1.6.5",
     "glob": "^7.1.2",
-    "jszip": "^3.1.4",
-    "replace-ext": "^1.0.0"
+    "unzip": "^0.1.11"
   }
 }
