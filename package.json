@@ -21,9 +21,11 @@
     "electron-reload": "^1.2.1"
   },
   "dependencies": {
-    "cheerio": "^0.22.0",
+    "adm-zip": "^0.4.7",
     "extract-zip": "^1.6.5",
     "glob": "^7.1.2",
+    "replace-ext": "^1.0.0",
+    "rimraf": "^2.6.1",
     "unzip": "^0.1.11"
   }
 }

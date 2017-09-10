@@ -1,13 +1,27 @@
 var path = require('path');
 var fs = require("fs");
-var bookGenerate = require('./js/bookGenerate');
 var glob = require("glob");
-var extract = require('extract-zip');
+var replaceExt = require('replace-ext');
+var AdmZip = require('adm-zip');
+
+var bookGenerate = require('./js/bookGenerate');
+var openFile = require('./js/openFile');
+var moveAndExtract = require('./js/moveAndExtract');
+
+// require in dependencies for the context menu
+const { remote } = require('electron')
+const { Menu, MenuItem } = remote
 
 const drag = document.querySelector('.drag')
 const holder = document.querySelector('.holder')
 
+// generate books
 bookGenerate(holder);
+
+// set the menu variable
+const menu = new Menu()
+// require context menu items
+require('./js/contextMenu');
 
 holder.ondragover = (e) => {
     e.preventDefault()
@@ -36,20 +50,13 @@ drag.ondrop = (e) => {
         } else {
             alert("you fucked up son!");
         }
-        // change the extension from mobi/epub to zip
-        f.path = f.path.replace(ext, '.zip');
-        // extract zip to directory with basename of path
-        extract(f.path, { dir: path.join(__dirname, 'books/'+path.basename(f.path)) }, function (err) {
-            // extraction is complete. make sure to handle the err
-            if(err){
-                console.log(err);
-            }
-            bookGenerate(holder);
-        })
+        moveAndExtract(f.path, bookGenerate);
     }
-    
     return false;
 }
+document.querySelector('.add').addEventListener("click", function () {
+    openFile(moveAndExtract, bookGenerate);
+})
 
 
 
