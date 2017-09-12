@@ -1,14 +1,15 @@
 var glob = require("glob");
-var extract = require('extract-zip');
 var path = require("path");
 
 function bookGenerate() {
+    console.log("started function");
     // remove pre existing books
     holder.querySelectorAll('.books').forEach(function (x) {
         x.remove();
     })
     // glob to find the opf files easier
     glob("./books/**/*.opf", function (err, files) {
+        console.log(files);
         if (err) {
             console.log(err);
         }

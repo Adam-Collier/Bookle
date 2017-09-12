@@ -38,20 +38,29 @@ drag.ondrop = (e) => {
     e.preventDefault()
     // remove drag overlay
     drag.classList.remove('drag-hover');
+
+    var files = [];
     // loop through the dragged files
     for (let f of e.dataTransfer.files) {
-        // get path of dragged files
-        console.log(path.extname(f.path));
         // check files have the correct extension
         var ext = path.extname(f.path);
         if (ext === '.epub' | '.mobi') {
             console.log("success");
-            // call book generator function
+            // push to files array
+            files.push(f.path);
         } else {
             alert("you fucked up son!");
         }
-        moveAndExtract(f.path, bookGenerate);
+        // moveAndExtract(f.path, bookGenerate);
     }
+    files.map(function (x, i) {
+        console.log(x);
+        moveAndExtract(x).then(function () {
+            if (i == files.length - 1) {
+                bookGenerate();
+            }
+        })
+    })
     return false;
 }
 document.querySelector('.add').addEventListener("click", function () {
