@@ -1,7 +1,7 @@
 var glob = require("glob");
 var path = require("path");
 
-function bookGenerate() {
+function bookGenerate(holder) {
     console.log("started function");
     // remove pre existing books
     holder.querySelectorAll('.books').forEach(function (x) {
@@ -54,8 +54,6 @@ function bookGenerate() {
                             title = el.innerHTML;
                         }
                     });
-                    // console.log(author);
-                    // console.log(title);
 
                     // create template literal to inject values
                     var bookCase = `
@@ -75,10 +73,14 @@ function bookGenerate() {
                         last.style.webkitAnimation = 'show 1s forwards'
                     }, 250 * (holder.querySelectorAll('.books').length));
 
-                    holder.addEventListener('webkitAnimationEnd', function () {
+                    // listen for when the animation finishes and remove
+                    holder.addEventListener('webkitAnimationEnd', function handler(e) {
                         this.style.webkitAnimation = '';
                         console.log("animation removed");
+                        // remove the event listener for other functions
+                        this.removeEventListener('webkitAnimationEnd', arguments.callee);
                     }, false);
+                    
                     // resolve the data from readFile
                     resolve(file);
                 })
@@ -92,7 +94,7 @@ function bookGenerate() {
             document.querySelectorAll(".books").forEach(function (x) {
                 x.addEventListener('contextmenu', (e) => {
                     e.preventDefault()
-                    delElement = e.target.closest(".books");
+                    bookElement = e.target.closest(".books");
                     menu.popup(remote.getCurrentWindow())
                 }, false)
             })

@@ -1,6 +1,6 @@
 const { app } = require('electron').remote
 
-function moveAndExtract(pathToAddedFile, generateLibrary) {
+function moveAndExtract(pathToAddedFile) {
     // define the path the epub will move too
     var bookPath = app.getAppPath() + '/books/epub/' + path.basename(pathToAddedFile);
     // copy the epub to the /books/epub directory
@@ -16,7 +16,6 @@ function moveAndExtract(pathToAddedFile, generateLibrary) {
             var zip = new AdmZip(zipPath);
             // extract all files to /books path
             resolve(zip.extractAllTo(app.getAppPath() + '/books/' + path.basename(zipPath, '.zip'), false));
-            
         })
     })
 }
