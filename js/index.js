@@ -7,6 +7,7 @@ var AdmZip = require('adm-zip');
 var bookGenerate = require('./js/bookGenerate');
 var openFile = require('./js/openFile');
 var moveAndExtract = require('./js/moveAndExtract');
+var saveEditedBook = require('./js/saveEditedBook');
 
 // require in dependencies for the context menu
 const { remote } = require('electron')
@@ -53,10 +54,13 @@ drag.ondrop = (e) => {
         }
         // moveAndExtract(f.path, bookGenerate);
     }
+    // map through all of the files added
     files.map(function (x, i) {
-        console.log(x);
+        // move and extract the files
         moveAndExtract(x).then(function () {
+            // check if all of the files have been extracted
             if (i == files.length - 1) {
+                // regenrate the books
                 bookGenerate();
             }
         })

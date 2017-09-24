@@ -1,13 +1,14 @@
 const {dialog} = require('electron').remote
 
 function openFile(moveAndExtract, bookGenerate){
-    console.log(dialog);
+    // show the open dialog
     dialog.showOpenDialog(function(filePaths){
-        console.log(filePaths[0]);
+        // move, extract and regenerate the books
         moveAndExtract(filePaths[0]).then(function(){
             bookGenerate();
         })
     });
 }
+
 
 module.exports = openFile;
