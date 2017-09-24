@@ -71,31 +71,32 @@ menu.append(new MenuItem({
                     });
 
                     // add a new book cover
-                    document.querySelector('.uploadCover').addEventListener('click', function(){
-                        // open the dialog window to show files
+                    document.querySelector('.uploadCover').addEventListener('click', function () {
+                        // open the dialog window to show image files
                         dialog.showOpenDialog({
                             filters: [
-                                { name: 'Images', extensions: ['jpg', 'png'] }
+                                { name: 'Images', extensions: ['jpg', 'jpeg', 'png'] }
                             ],
                             properties: ['openFile']
                         }, function (filePaths) {
-                            // find each cover image path 
+                            // grab the cover path relative to the opf file
                             htmlDoc.querySelectorAll('*[id*="cover"]').forEach(function (x) {
                                 if (x.getAttribute("href").match(/(jpeg|jpg)/)) {
-                                    // console.log('./books' + bookElement.dataset.file + '/' + x.getAttribute("href"))
-
+                                    // use glob to get the full path to the book cover
                                     glob("./books/" + bookFileName + "/**/" + x.getAttribute("href"), function (err, cover) {
-                                        console.log(path.dirname(cover[0]))
-                                        var coverName = x.getAttribute("href").split('/')
-                                        console.log(coverName[coverName.length-1])
-
+                                        // copy and replace the existing cover file using the same name
                                         fs.writeFileSync(cover[0], fs.readFileSync(filePaths[0]));
-
-                                        
-
+                                        // add cachebreaker to the image to show the new file
                                         document.querySelector('.left img').src = document.querySelector('.left img').src + "?" + new Date().getTime();
-
-                                        console.log(document.querySelector('.left img'))
+                                        // animate the new cover in
+                                        document.querySelector('.left img').style.webkitAnimation = 'show 1s forwards'
+                                        // remove the animation when finished
+                                        document.querySelector('.left img').addEventListener('webkitAnimationEnd', function handler(e) {
+                                            this.style.webkitAnimation = '';
+                                            console.log("animation removed");
+                                            // remove the event listener for other functions
+                                            this.removeEventListener('webkitAnimationEnd', arguments.callee);
+                                        }, false);
                                     })
                                 }
                             });
