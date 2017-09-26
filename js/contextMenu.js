@@ -57,17 +57,22 @@ menu.append(new MenuItem({
 `;
                     // on click append the template literal to the book container
                     document.querySelector('.holder').insertAdjacentHTML('beforeend', editWindow);
+                    // stop body from scrolling
+                    document.querySelector('body').classList.add('noscroll');
                     // animate element in
                     document.querySelector('.edit').style.webkitAnimation = 'showEdit 600ms forwards'
 
                     // add a click event to the close button
                     document.querySelector('.close').addEventListener('click', function () {
+                        // body can scroll again
+                        document.querySelector('body').classList.remove('noscroll');
                         // animate element out
                         document.querySelector('.edit').style.webkitAnimation = 'hideEdit 300ms forwards'
                         // remove the element once the animation has finished/ element isnt visible anymore
                         setTimeout(function () {
                             document.querySelector('.edit').remove();
                         }, 250)
+                        
                     });
 
                     // add a new book cover
@@ -80,7 +85,7 @@ menu.append(new MenuItem({
                             properties: ['openFile']
                         }, function (filePaths) {
                             // grab the cover path relative to the opf file
-                            htmlDoc.querySelectorAll('*[id*="cover"]').forEach(function (x) {
+                            htmlDoc.querySelectorAll('*[id*="cover"], [href*="cover"]').forEach(function (x) {
                                 if (x.getAttribute("href").match(/(jpeg|jpg)/)) {
                                     // use glob to get the full path to the book cover
                                     glob("./books/" + bookFileName + "/**/" + x.getAttribute("href"), function (err, cover) {
@@ -138,11 +143,13 @@ menu.append(new MenuItem({
             })
             // when all of the promises pushed .then method called
             Promise.all(promises).then(function () {
-                bookElement.style.webkitAnimation = 'hide 600ms ease-out forwards'
+                // bookElement.style.webkitAnimation = 'hide 750ms ease-in-out forwards'
+                bookElement.style.webkitAnimation = 'hide 750ms cubic-bezier(.64,.21,.4,1)  forwards'
+                cubicbezier
                 // remove the element once the animation has finished/ element isnt visible anymore
                 setTimeout(function () {
                     bookElement.remove();
-                }, 600)
+                }, 700)
             })
         })
     }

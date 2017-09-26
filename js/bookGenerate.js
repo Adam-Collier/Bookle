@@ -36,12 +36,18 @@ function bookGenerate() {
                 }
             });
 
-            // find each cover image path 
-            htmlDoc.querySelectorAll('*[id*="cover"]').forEach(function (x) {
-                if (x.getAttribute("href").match(/(jpeg|jpg)/)) {
-                    metaObject.cover = x.getAttribute("href") + "?" + new Date().getTime();
-                }
-            });
+            // check if the href or the id contains the word cover
+            if (htmlDoc.querySelectorAll('*[id*="cover"], [href*="cover"]')) {
+                // find each cover image path
+                htmlDoc.querySelectorAll('*[id*="cover"], [href*="cover"]').forEach(function (x) {
+                    // check if they are an image
+                    if (x.getAttribute("href").match(/(jpeg|jpg)/)) {
+                        // add to the object with the cachebreaker
+                        metaObject.cover = x.getAttribute("href") + "?" + new Date().getTime();
+                    }
+                });
+            }
+
 
             // push object to the array
             booksArray.push(metaObject);
@@ -89,7 +95,6 @@ function bookGenerate() {
                     // remove the event listener for other functions
                     this.removeEventListener('webkitAnimationEnd', arguments.callee);
                 }, false);
-
                 // resolve the data from readFile
                 resolve();
             })

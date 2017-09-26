@@ -1,7 +1,6 @@
 var path = require('path');
 var fs = require("fs");
 var glob = require("glob");
-var replaceExt = require('replace-ext');
 var AdmZip = require('adm-zip');
 
 var bookGenerate = require('./js/bookGenerate');

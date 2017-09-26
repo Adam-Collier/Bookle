@@ -2,7 +2,7 @@ var fs = require('fs');
 var glob = require('glob');
 
 function saveEditedBook() {
-    
+
     var edit = document.querySelector('.edit');
 
     // assign .opf path to a variable
@@ -42,6 +42,8 @@ function saveEditedBook() {
         // turn DOM structure back into a string and write the file
         xmlString = (new XMLSerializer()).serializeToString(htmlDoc);
         fs.writeFileSync(opfFile, xmlString, 'utf-8');
+        // allow body to scroll again
+        document.querySelector('body').classList.remove('noscroll');
         // animate edit window out
         document.querySelector('.edit').style.webkitAnimation = 'hideEdit 600ms forwards'
         // remove the element once the animation has finished/ element isnt visible anymore
@@ -52,6 +54,5 @@ function saveEditedBook() {
         bookGenerate();
     })
 }
-
 
 module.exports = saveEditedBook;

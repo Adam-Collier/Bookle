@@ -78,7 +78,6 @@ svg {
 }
 
 .books {
-    /* flex: 0 0 20vw; */
     width: 20vw;
     margin: 0 4vw 50px 0;
     white-space: nowrap;
@@ -177,9 +176,15 @@ svg {
         transform: translateY(0px);
         width: 20vw;
     }
-    40% {
+    30% {
         width: 20vw;
-        transform: translateY(-20px);
+        transform: translateY(-40px);
+        opacity: 0;
+        margin: 0 4vw 50px 0;
+    }
+    50% {
+        width: 20vw;
+        transform: translateY(-40px);
         opacity: 0;
         margin: 0 4vw 50px 0;
     }
@@ -211,6 +216,10 @@ svg {
     }
 }
 
+.noscroll {
+    overflow: hidden;
+}
+
 .edit {
     position: fixed;
     top: 50%;
@@ -229,7 +238,6 @@ svg {
     border-radius: 5px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.15);
     opacity: 0;
-    /* opacity: 1; */
 }
 
 .edit svg {
