@@ -5,11 +5,8 @@ Bookle is a A simple, friendly ebook manager
 ## Whats Included?
 
 - [adm-zip](https://www.npmjs.com/package/adm-zip)
-- [extract-zip](https://www.npmjs.com/package/extract-zip)
 - [glob](https://www.npmjs.com/package/glob)
-- [replace-ext](https://www.npmjs.com/package/replace-ext)
 - [rimraf](https://www.npmjs.com/package/rimraf)
-- [unzip](https://www.npmjs.com/package/unzip)
 - [electron](https://www.npmjs.com/package/electron)
 - [electron-reload](https://www.npmjs.com/package/electron-reload)
 
