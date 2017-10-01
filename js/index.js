@@ -3,6 +3,7 @@ var fs = require("fs");
 var glob = require("glob");
 var AdmZip = require('adm-zip');
 
+
 var bookGenerate = require('./js/bookGenerate');
 var openFile = require('./js/openFile');
 var moveAndExtract = require('./js/moveAndExtract');
@@ -26,12 +27,18 @@ require('./js/contextMenu');
 holder.ondragover = (e) => {
     e.preventDefault()
     console.log("dragging");
-    // display drop area
-    drag.classList.add('drag-hover')
-    // return false;
+    if (path.extname(e.dataTransfer.files[0].path).match(/(epub|mobi)/)) {
+        // display drop area
+        drag.classList.add('drag-hover')
+        // return false;
+    }
 }
 drag.ondragleave = holder.ondragend = () => {
     drag.classList.remove('drag-hover');
+    return false;
+}
+holder.ondrop = (e) => {
+    e.preventDefault();
     return false;
 }
 drag.ondrop = (e) => {
@@ -44,21 +51,20 @@ drag.ondrop = (e) => {
     for (let f of e.dataTransfer.files) {
         // check files have the correct extension
         var ext = path.extname(f.path);
-        if (ext === '.epub' | '.mobi') {
+        if (ext.match(/(epub|mobi)/)) {
             console.log("success");
             // push to files array
             files.push(f.path);
-        } else {
-            alert("you fucked up son!");
         }
         // moveAndExtract(f.path, bookGenerate);
     }
+    console.log(files);
     // map through all of the files added
     files.map(function (x, i) {
         // move and extract the files
         moveAndExtract(x).then(function () {
             // check if all of the files have been extracted
-            if (i == files.length - 1) {
+            if (i === files.length - 1) {
                 // regenrate the books
                 bookGenerate();
             }

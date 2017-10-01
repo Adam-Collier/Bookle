@@ -8,7 +8,7 @@ const path = require('path')
 const url = require('url')
 
 //reload the window on saved changes
-require('electron-reload')('**/*.{css,js,html}');
+// require('electron-reload')('**/*.{css,js,html}');
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.

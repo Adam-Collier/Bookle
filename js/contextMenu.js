@@ -145,7 +145,6 @@ menu.append(new MenuItem({
             Promise.all(promises).then(function () {
                 // bookElement.style.webkitAnimation = 'hide 750ms ease-in-out forwards'
                 bookElement.style.webkitAnimation = 'hide 750ms cubic-bezier(.64,.21,.4,1)  forwards'
-                cubicbezier
                 // remove the element once the animation has finished/ element isnt visible anymore
                 setTimeout(function () {
                     bookElement.remove();
