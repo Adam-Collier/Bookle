@@ -2,7 +2,7 @@
 
 Bookle is a A simple, friendly ebook manager
 
-## Whats Included?
+## Whats Included? Adam's stuff is what!
 
 - [adm-zip](https://www.npmjs.com/package/adm-zip)
 - [glob](https://www.npmjs.com/package/glob)
